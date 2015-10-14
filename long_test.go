@@ -56,7 +56,7 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 			binary.BigEndian.PutUint32(keyspaces[i][j*16+4:], j)
 		}
 	}
-	kt := func(ka uint64, kb uint64, ts uint64, b uint32, o uint32, l uint32) {
+	kt := func(ka uint64, kb uint64, ts uint64, b uint32, o uint32, l uint16) {
 		vlm.Set(ka, kb, ts, b, o, l, false)
 		if ts&2 != 0 { // test calls discard with 2 as a mask quite often
 			return
@@ -97,7 +97,7 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 			}
 			if j%100 == 33 {
 				uselessCounter := 0
-				stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, math.MaxUint64, func(keyA uint64, keyB uint64, timestamp uint64, length uint32) bool {
+				stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, math.MaxUint64, func(keyA uint64, keyB uint64, timestamp uint64, length uint16) bool {
 					uselessCounter++
 					return true
 				})

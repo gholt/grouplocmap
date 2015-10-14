@@ -1,6 +1,6 @@
 // Package grouplocmap provides a concurrency-safe data structure that maps
 // keys to value locations. A key is 128 bits and is specified using two
-// uint64s (keyA, keyB). A value location is specified using a blockID, offset,
+// uint64s (groupKeyA, groupKeyB). A value location is specified using a blockID, offset,
 // and length triplet. Each mapping is assigned a timestamp and the greatest
 // timestamp wins.
 //
@@ -35,24 +35,24 @@ import (
 // GroupLocMap is an interface for tracking the mappings from keys to the
 // locations of their values.
 type GroupLocMap interface {
-	// Get returns timestamp, blockID, offset, length for keyA, keyB.
-	Get(keyA uint64, keyB uint64) (timestamp uint64, blockID uint32, offset uint32, length uint32)
-	// Set stores timestamp, blockID, offset, length for keyA, keyB and returns
+	// Get returns timestamp, blockID, offset, length for groupKeyA, groupKeyB.
+	Get(groupKeyA uint64, groupKeyB uint64) (timestamp uint64, blockID uint32, offset uint32, length uint16)
+	// Set stores timestamp, blockID, offset, length for groupKeyA, groupKeyB and returns
 	// the previous timestamp stored. If a newer item is already stored for
-	// keyA, keyB, that newer item is kept. If an item with the same timestamp
+	// groupKeyA, groupKeyB, that newer item is kept. If an item with the same timestamp
 	// is already stored, it is usually kept unless evenIfSameTimestamp is set
 	// true, in which case the passed in data is kept (useful to update a
 	// location that moved from memory to disk, for example). Setting an item
 	// to blockID == 0 removes it from the mapping if the timestamp stored is
 	// less than (or equal to if evenIfSameTimestamp) the timestamp passed in.
-	Set(keyA uint64, keyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint32, evenIfSameTimestamp bool) (previousTimestamp uint64)
+	Set(groupKeyA uint64, groupKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, evenIfSameTimestamp bool) (previousTimestamp uint64)
 	// Discard removes any items in the start:stop (inclusive) range whose
 	// timestamp & mask != 0.
 	Discard(start uint64, stop uint64, mask uint64)
 	// ScanCallback calls the callback for each item within the start:stop
 	// range (inclusive) whose timestamp & mask != 0 || mask == 0, timestamp &
 	// notMask == 0, and timestamp <= cutoff, up to max times; it will return
-	// the keyA value the scan stopped and more will be true if there are
+	// the groupKeyA value the scan stopped and more will be true if there are
 	// possibly more items but max was reached.
 	//
 	// Note that callbacks may have been made with keys that were greater than
@@ -75,7 +75,7 @@ type GroupLocMap interface {
 	// Additionally, the callback itself may abort the scan early by returning
 	// false, in which case the (stopped, more) return values are not
 	// particularly useful.
-	ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(keyA uint64, keyB uint64, timestamp uint64, length uint32) bool) (stopped uint64, more bool)
+	ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, timestamp uint64, length uint16) bool) (stopped uint64, more bool)
 	// SetInactiveMask defines the mask to use with a timestamp to determine if
 	// a location is inactive (deleted, locally removed, etc.) and is used by
 	// Stats to determine what to count for its ActiveCount and ActiveBytes.
@@ -204,13 +204,16 @@ type node struct {
 }
 
 type entry struct { // If the Sizeof this changes, be sure to update docs.
-	keyA      uint64
-	keyB      uint64
-	timestamp uint64
-	blockID   uint32
-	offset    uint32
-	length    uint32
-	next      uint32
+	groupKeyA    uint64
+	groupKeyB    uint64
+	memberKeyA   uint64
+	memberKeyB   uint64
+	timestamp    uint64
+	blockID      uint32
+	offset       uint32
+	length       uint16
+	nameChecksum uint16
+	next         uint32
 }
 
 // New returns a new GroupLocMap instance using the config options given.
@@ -313,11 +316,11 @@ func (vlm *groupLocMap) split(n *node) {
 		}
 		for ae.next != 0 {
 			aen := &ao[ae.next>>b][ae.next&lm]
-			if aen.keyA&hm == 0 {
+			if aen.groupKeyA&hm == 0 {
 				ae = aen
 				continue
 			}
-			be := &bes[uint32(aen.keyB)&lm]
+			be := &bes[uint32(aen.groupKeyB)&lm]
 			if be.blockID == 0 {
 				*be = *aen
 				be.next = 0
@@ -363,7 +366,7 @@ func (vlm *groupLocMap) split(n *node) {
 	// Now any matching entries left are non-overflow entries. Move those.
 	for i := uint32(0); i <= lm; i++ {
 		ae := &aes[i]
-		if ae.blockID == 0 || ae.keyA&hm == 0 {
+		if ae.blockID == 0 || ae.groupKeyA&hm == 0 {
 			continue
 		}
 		be := &bes[i]
@@ -507,7 +510,7 @@ func (vlm *groupLocMap) merge(n *node) {
 			continue
 		}
 		for {
-			ae := &aes[uint32(be.keyB)&lm]
+			ae := &aes[uint32(be.groupKeyB)&lm]
 			if ae.blockID == 0 {
 				*ae = *be
 				ae.next = 0
@@ -582,8 +585,8 @@ func (vlm *groupLocMap) merge(n *node) {
 	n.resizingLock.Unlock()
 }
 
-func (vlm *groupLocMap) Get(keyA uint64, keyB uint64) (uint64, uint32, uint32, uint32) {
-	n := &vlm.roots[keyA>>vlm.rootShift]
+func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64) (uint64, uint32, uint32, uint16) {
+	n := &vlm.roots[groupKeyA>>vlm.rootShift]
 	n.lock.RLock()
 	for {
 		if n.a == nil {
@@ -594,7 +597,7 @@ func (vlm *groupLocMap) Get(keyA uint64, keyB uint64) (uint64, uint32, uint32, u
 			break
 		}
 		l := &n.lock
-		if keyA&n.highMask == 0 {
+		if groupKeyA&n.highMask == 0 {
 			n = n.a
 		} else {
 			n = n.b
@@ -604,7 +607,7 @@ func (vlm *groupLocMap) Get(keyA uint64, keyB uint64) (uint64, uint32, uint32, u
 	}
 	b := vlm.bits
 	lm := vlm.lowMask
-	i := uint32(keyB) & lm
+	i := uint32(groupKeyB) & lm
 	l := &n.entriesLocks[i&vlm.entriesLockMask]
 	ol := &n.overflowLock
 	e := &n.entries[i]
@@ -615,7 +618,7 @@ func (vlm *groupLocMap) Get(keyA uint64, keyB uint64) (uint64, uint32, uint32, u
 		return 0, 0, 0, 0
 	}
 	for {
-		if e.keyA == keyA && e.keyB == keyB {
+		if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB {
 			rt := e.timestamp
 			rb := e.blockID
 			ro := e.offset
@@ -636,8 +639,8 @@ func (vlm *groupLocMap) Get(keyA uint64, keyB uint64) (uint64, uint32, uint32, u
 	return 0, 0, 0, 0
 }
 
-func (vlm *groupLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint32, evenIfSameTimestamp bool) uint64 {
-	n := &vlm.roots[keyA>>vlm.rootShift]
+func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, evenIfSameTimestamp bool) uint64 {
+	n := &vlm.roots[groupKeyA>>vlm.rootShift]
 	var pn *node
 	n.lock.RLock()
 	for {
@@ -656,7 +659,7 @@ func (vlm *groupLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID 
 			continue
 		}
 		pn = n
-		if keyA&n.highMask == 0 {
+		if groupKeyA&n.highMask == 0 {
 			n = n.a
 		} else {
 			n = n.b
@@ -666,7 +669,7 @@ func (vlm *groupLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID 
 	}
 	b := vlm.bits
 	lm := vlm.lowMask
-	i := uint32(keyB) & lm
+	i := uint32(groupKeyB) & lm
 	l := &n.entriesLocks[i&vlm.entriesLockMask]
 	ol := &n.overflowLock
 	e := &n.entries[i]
@@ -675,7 +678,7 @@ func (vlm *groupLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID 
 	if e.blockID != 0 {
 		var f uint32
 		for {
-			if e.keyA == keyA && e.keyB == keyB {
+			if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB {
 				t := e.timestamp
 				if e.timestamp > timestamp || (e.timestamp == timestamp && !evenIfSameTimestamp) {
 					l.Unlock()
@@ -742,8 +745,8 @@ func (vlm *groupLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID 
 	}
 	e = &n.entries[i]
 	if e.blockID == 0 {
-		e.keyA = keyA
-		e.keyB = keyB
+		e.groupKeyA = groupKeyA
+		e.groupKeyB = groupKeyB
 		e.timestamp = timestamp
 		e.blockID = blockID
 		e.offset = offset
@@ -788,8 +791,8 @@ func (vlm *groupLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID 
 				n.overflowLowestFree = oc<<b + 1
 			}
 		}
-		e.keyA = keyA
-		e.keyB = keyB
+		e.groupKeyA = groupKeyA
+		e.groupKeyB = groupKeyB
 		e.timestamp = timestamp
 		e.blockID = blockID
 		e.offset = offset
@@ -853,7 +856,7 @@ func (vlm *groupLocMap) discard(start uint64, stop uint64, mask uint64, n *node)
 		}
 		var p *entry
 		for {
-			if e.keyA >= start && e.keyA <= stop && e.timestamp&mask != 0 {
+			if e.groupKeyA >= start && e.groupKeyA <= stop && e.timestamp&mask != 0 {
 				if p == nil {
 					if e.next == 0 {
 						e.blockID = 0
@@ -900,7 +903,7 @@ func (vlm *groupLocMap) discard(start uint64, stop uint64, mask uint64, n *node)
 	n.lock.RUnlock()
 }
 
-func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(keyA uint64, keyB uint64, timestamp uint64, length uint32) bool) (uint64, bool) {
+func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, timestamp uint64, length uint16) bool) (uint64, bool) {
 	var stopped uint64
 	var more bool
 	for i := 0; i < len(vlm.roots); i++ {
@@ -915,7 +918,7 @@ func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, not
 }
 
 // Will call n.lock.RUnlock()
-func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(keyA uint64, keyB uint64, timestamp uint64, length uint32) bool, n *node) (uint64, uint64, bool) {
+func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, timestamp uint64, length uint16) bool, n *node) (uint64, uint64, bool) {
 	if start > n.rangeStop || stop < n.rangeStart {
 		n.lock.RUnlock()
 		return max, stop, false
@@ -962,7 +965,7 @@ func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, not
 						more = true
 						break
 					}
-					if !callback(e.keyA, e.keyB, e.timestamp, e.length) {
+					if !callback(e.groupKeyA, e.groupKeyB, e.timestamp, e.length) {
 						stopped = n.rangeStart
 						more = true
 						break
@@ -997,13 +1000,13 @@ func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, not
 			continue
 		}
 		for {
-			if e.keyA >= start && e.keyA <= stop && (mask == 0 || e.timestamp&mask != 0) && e.timestamp&notMask == 0 && e.timestamp <= cutoff {
+			if e.groupKeyA >= start && e.groupKeyA <= stop && (mask == 0 || e.timestamp&mask != 0) && e.timestamp&notMask == 0 && e.timestamp <= cutoff {
 				if max < 1 {
 					stopped = n.rangeStart
 					more = true
 					break
 				}
-				if !callback(e.keyA, e.keyB, e.timestamp, e.length) {
+				if !callback(e.groupKeyA, e.groupKeyB, e.timestamp, e.length) {
 					stopped = n.rangeStart
 					more = true
 					break
