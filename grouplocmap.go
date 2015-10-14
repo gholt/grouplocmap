@@ -87,7 +87,7 @@ type GroupLocMap interface {
 	// Additionally, the callback itself may abort the scan early by returning
 	// false, in which case the (stopped, more) return values are not
 	// particularly useful.
-	ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, timestamp uint64, length uint16) bool) (stopped uint64, more bool)
+	ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, length uint16, nameChecksum uint16) bool) (stopped uint64, more bool)
 	// SetInactiveMask defines the mask to use with a timestamp to determine if
 	// a location is inactive (deleted, locally removed, etc.) and is used by
 	// Stats to determine what to count for its ActiveCount and ActiveBytes.
@@ -923,7 +923,7 @@ func (vlm *groupLocMap) discard(start uint64, stop uint64, mask uint64, n *node)
 	n.lock.RUnlock()
 }
 
-func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, timestamp uint64, length uint16) bool) (uint64, bool) {
+func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, length uint16, nameChecksum uint16) bool) (uint64, bool) {
 	var stopped uint64
 	var more bool
 	for i := 0; i < len(vlm.roots); i++ {
@@ -938,7 +938,7 @@ func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, not
 }
 
 // Will call n.lock.RUnlock()
-func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, timestamp uint64, length uint16) bool, n *node) (uint64, uint64, bool) {
+func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, length uint16, nameChecksum uint16) bool, n *node) (uint64, uint64, bool) {
 	if start > n.rangeStop || stop < n.rangeStart {
 		n.lock.RUnlock()
 		return max, stop, false
@@ -985,7 +985,7 @@ func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, not
 						more = true
 						break
 					}
-					if !callback(e.groupKeyA, e.groupKeyB, e.timestamp, e.length) {
+					if !callback(e.groupKeyA, e.groupKeyB, e.memberKeyA, e.memberKeyB, e.timestamp, e.length, e.nameChecksum) {
 						stopped = n.rangeStart
 						more = true
 						break
@@ -1026,7 +1026,7 @@ func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, not
 					more = true
 					break
 				}
-				if !callback(e.groupKeyA, e.groupKeyB, e.timestamp, e.length) {
+				if !callback(e.groupKeyA, e.groupKeyB, e.memberKeyA, e.memberKeyB, e.timestamp, e.length, e.nameChecksum) {
 					stopped = n.rangeStart
 					more = true
 					break

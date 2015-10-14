@@ -100,7 +100,7 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 			}
 			if j%100 == 33 {
 				uselessCounter := 0
-				stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, math.MaxUint64, func(keyA uint64, keyB uint64, timestamp uint64, length uint16) bool {
+				stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, math.MaxUint64, func(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, length uint16, nameChecksum uint16) bool {
 					uselessCounter++
 					return true
 				})
