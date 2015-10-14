@@ -1,8 +1,9 @@
 // Package grouplocmap provides a concurrency-safe data structure that maps
-// keys to value locations. A key is 128 bits and is specified using two
-// uint64s (groupKeyA, groupKeyB). A value location is specified using a blockID, offset,
-// and length triplet. Each mapping is assigned a timestamp and the greatest
-// timestamp wins.
+// keypairs to value locations. A key is 128 bits and is specified using two
+// uint64s (KeyA, KeyB). There are two keys per location, group (groupKeyA,
+// groupKeyB) and member (memberKeyA, memberKeyB). A value location is
+// specified using a blockID, offset, length, and nameChecksum. Each mapping is
+// assigned a timestamp and the greatest timestamp wins.
 //
 // The timestamp usually has some number of the lowest bits in use for state
 // information such as active and inactive entries. For example, the lowest bit
@@ -10,6 +11,10 @@
 // retained for some time period before being completely removed with Discard.
 // Exactly how many bits are used and what they're used for is outside the
 // scope of the mapping itself.
+//
+// The length is the number of total bytes stored at the location. Those bytes
+// must begin with an uint16 nameLength followed by that many bytes of the name
+// value itself.
 //
 // This implementation essentially uses a tree structure of slices of key to
 // location assignments. When a slice fills up, an additional slice is created
@@ -35,13 +40,15 @@ import (
 // GroupLocMap is an interface for tracking the mappings from keys to the
 // locations of their values.
 type GroupLocMap interface {
-	// Get returns timestamp, blockID, offset, length for groupKeyA, groupKeyB.
-	Get(groupKeyA uint64, groupKeyB uint64) (timestamp uint64, blockID uint32, offset uint32, length uint16)
-	// Set stores timestamp, blockID, offset, length for groupKeyA, groupKeyB and returns
-	// the previous timestamp stored. If a newer item is already stored for
-	// groupKeyA, groupKeyB, that newer item is kept. If an item with the same timestamp
-	// is already stored, it is usually kept unless evenIfSameTimestamp is set
-	// true, in which case the passed in data is kept (useful to update a
+	// Get returns timestamp, blockID, offset, length, nameChecksum for
+	// groupKeyA, groupKeyB, memberKeyA, memberKeyB.
+	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64) (timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksum uint16)
+	// Set stores timestamp, blockID, offset, length for groupKeyA, groupKeyB
+	// and returns the previous timestamp stored. If a newer item is already
+	// stored for groupKeyA, groupKeyB, that newer item is kept. If an item
+	// with the same timestamp is already stored, it is usually kept unless
+	// evenIfSameTimestamp is set true, in which case the passed in data is
+	// kept (useful to update a
 	// location that moved from memory to disk, for example). Setting an item
 	// to blockID == 0 removes it from the mapping if the timestamp stored is
 	// less than (or equal to if evenIfSameTimestamp) the timestamp passed in.
@@ -585,14 +592,14 @@ func (vlm *groupLocMap) merge(n *node) {
 	n.resizingLock.Unlock()
 }
 
-func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64) (uint64, uint32, uint32, uint16) {
+func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64) (uint64, uint32, uint32, uint16, uint16) {
 	n := &vlm.roots[groupKeyA>>vlm.rootShift]
 	n.lock.RLock()
 	for {
 		if n.a == nil {
 			if n.entries == nil {
 				n.lock.RUnlock()
-				return 0, 0, 0, 0
+				return 0, 0, 0, 0, 0
 			}
 			break
 		}
@@ -615,7 +622,7 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64) (uint64, uint32,
 	if e.blockID == 0 {
 		l.RUnlock()
 		n.lock.RUnlock()
-		return 0, 0, 0, 0
+		return 0, 0, 0, 0, 0
 	}
 	for {
 		if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB {
@@ -623,9 +630,10 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64) (uint64, uint32,
 			rb := e.blockID
 			ro := e.offset
 			rl := e.length
+			rn := e.nameChecksum
 			l.RUnlock()
 			n.lock.RUnlock()
-			return rt, rb, ro, rl
+			return rt, rb, ro, rl, rn
 		}
 		if e.next == 0 {
 			break
@@ -636,7 +644,7 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64) (uint64, uint32,
 	}
 	l.RUnlock()
 	n.lock.RUnlock()
-	return 0, 0, 0, 0
+	return 0, 0, 0, 0, 0
 }
 
 func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, evenIfSameTimestamp bool) uint64 {
