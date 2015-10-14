@@ -57,7 +57,7 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 		}
 	}
 	kt := func(ka uint64, kb uint64, ts uint64, b uint32, o uint32, l uint16) {
-		vlm.Set(ka, kb, ts, b, o, l, false)
+		vlm.Set(ka, kb, 12345, 12345, ts, b, o, l, 0, false)
 		if ts&2 != 0 { // test calls discard with 2 as a mask quite often
 			return
 		}

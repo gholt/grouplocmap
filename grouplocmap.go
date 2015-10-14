@@ -43,16 +43,17 @@ type GroupLocMap interface {
 	// Get returns timestamp, blockID, offset, length, nameChecksum for
 	// groupKeyA, groupKeyB, memberKeyA, memberKeyB.
 	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64) (timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksum uint16)
-	// Set stores timestamp, blockID, offset, length for groupKeyA, groupKeyB
-	// and returns the previous timestamp stored. If a newer item is already
-	// stored for groupKeyA, groupKeyB, that newer item is kept. If an item
+	// Set stores timestamp, blockID, offset, length, nameChecksum for
+	// groupKeyA, groupKeyB, memberKeyA, memberKeyB and returns the previous
+	// timestamp stored. If a newer item is already stored for groupKeyA,
+	// groupKeyB, memberKeyA, memberKeyB, that newer item is kept. If an item
 	// with the same timestamp is already stored, it is usually kept unless
 	// evenIfSameTimestamp is set true, in which case the passed in data is
-	// kept (useful to update a
-	// location that moved from memory to disk, for example). Setting an item
-	// to blockID == 0 removes it from the mapping if the timestamp stored is
-	// less than (or equal to if evenIfSameTimestamp) the timestamp passed in.
-	Set(groupKeyA uint64, groupKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, evenIfSameTimestamp bool) (previousTimestamp uint64)
+	// kept (useful to update a location that moved from memory to disk, for
+	// example). Setting an item to blockID == 0 removes it from the mapping if
+	// the timestamp stored is less than (or equal to if evenIfSameTimestamp)
+	// the timestamp passed in.
+	Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksum uint16, evenIfSameTimestamp bool) (previousTimestamp uint64)
 	// Discard removes any items in the start:stop (inclusive) range whose
 	// timestamp & mask != 0.
 	Discard(start uint64, stop uint64, mask uint64)
@@ -647,7 +648,7 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	return 0, 0, 0, 0, 0
 }
 
-func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, evenIfSameTimestamp bool) uint64 {
+func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksum uint16, evenIfSameTimestamp bool) uint64 {
 	n := &vlm.roots[groupKeyA>>vlm.rootShift]
 	var pn *node
 	n.lock.RLock()
@@ -698,6 +699,7 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, timestamp uint64
 					e.blockID = blockID
 					e.offset = offset
 					e.length = length
+					e.nameChecksum = nameChecksum
 					l.Unlock()
 					n.lock.RUnlock()
 					return t
@@ -755,10 +757,13 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, timestamp uint64
 	if e.blockID == 0 {
 		e.groupKeyA = groupKeyA
 		e.groupKeyB = groupKeyB
+		e.memberKeyA = memberKeyA
+		e.memberKeyB = memberKeyB
 		e.timestamp = timestamp
 		e.blockID = blockID
 		e.offset = offset
 		e.length = length
+		e.nameChecksum = nameChecksum
 	} else {
 		ol.Lock()
 		o := n.overflow
@@ -801,10 +806,13 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, timestamp uint64
 		}
 		e.groupKeyA = groupKeyA
 		e.groupKeyB = groupKeyB
+		e.memberKeyA = memberKeyA
+		e.memberKeyB = memberKeyB
 		e.timestamp = timestamp
 		e.blockID = blockID
 		e.offset = offset
 		e.length = length
+		e.nameChecksum = nameChecksum
 		ol.Unlock()
 	}
 	u := atomic.AddUint32(&n.used, 1)
