@@ -5,7 +5,7 @@
 // You'll need a good amount of RAM too. The above uses about 3-4G of memory
 // and takes about 2-3 minutes to run on my MacBook Pro Retina 15".
 
-package valuelocmap
+package grouplocmap
 
 import (
 	"encoding/binary"
@@ -38,7 +38,7 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 	// Roots is set low to get deeper quicker and cause more contention.
 	// PageSize is set low to cause more page creation and deletion.
 	// SplitMultiplier is set low to get splits to happen quicker.
-	vlm := New(&Config{Roots: 8, PageSize: 512, SplitMultiplier: 1}).(*valueLocMap)
+	vlm := New(&Config{Roots: 8, PageSize: 512, SplitMultiplier: 1}).(*groupLocMap)
 	// Override the mergeLevel to make it happen more often.
 	for i := 0; i < len(vlm.roots); i++ {
 		vlm.roots[i].mergeLevel = vlm.roots[i].splitLevel - 2

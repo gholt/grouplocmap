@@ -1,4 +1,4 @@
-// Package valuelocmap provides a concurrency-safe data structure that maps
+// Package grouplocmap provides a concurrency-safe data structure that maps
 // keys to value locations. A key is 128 bits and is specified using two
 // uint64s (keyA, keyB). A value location is specified using a blockID, offset,
 // and length triplet. Each mapping is assigned a timestamp and the greatest
@@ -17,7 +17,7 @@
 // a slice empties, it is merged with its pair in the tree structure and the
 // tree shrinks. The tree is balanced by high bits of the key, and locations
 // are distributed in the slices by the low bits.
-package valuelocmap
+package grouplocmap
 
 import (
 	"fmt"
@@ -32,9 +32,9 @@ import (
 	"gopkg.in/gholt/brimtext.v1"
 )
 
-// ValueLocMap is an interface for tracking the mappings from keys to the
+// GroupLocMap is an interface for tracking the mappings from keys to the
 // locations of their values.
-type ValueLocMap interface {
+type GroupLocMap interface {
 	// Get returns timestamp, blockID, offset, length for keyA, keyB.
 	Get(keyA uint64, keyB uint64) (timestamp uint64, blockID uint32, offset uint32, length uint32)
 	// Set stores timestamp, blockID, offset, length for keyA, keyB and returns
@@ -64,7 +64,7 @@ type ValueLocMap interface {
 	// of a group. This means that items may be duplicated in a subsequent scan
 	// that begins where a previous scan indicated it stopped.
 	//
-	// In practice with the valuestore use case this hasn't been an issue yet.
+	// In practice with the groupstore use case this hasn't been an issue yet.
 	// Discard passes don't duplicate because the same keys won't match the
 	// modified mask from the previous pass. Outgoing pull replication passes
 	// just end up with some additional keys placed in the bloom filter
@@ -80,7 +80,7 @@ type ValueLocMap interface {
 	// a location is inactive (deleted, locally removed, etc.) and is used by
 	// Stats to determine what to count for its ActiveCount and ActiveBytes.
 	SetInactiveMask(mask uint64)
-	// Stats returns a Stats instance giving information about the ValueLocMap.
+	// Stats returns a Stats instance giving information about the GroupLocMap.
 	//
 	// Note that this walks the entire data structure and is relatively
 	// expensive; debug = true will make it even more expensive.
@@ -91,12 +91,12 @@ type ValueLocMap interface {
 	Stats(debug bool) *Stats
 }
 
-// Config represents the set of values for configuring a ValueLocMap. Note that
+// Config represents the set of values for configuring a GroupLocMap. Note that
 // changing the values in this structure will have no effect on existing
-// ValueLocMaps; they are copied on instance creation.
+// GroupLocMaps; they are copied on instance creation.
 type Config struct {
 	// Workers indicates how many workers may be in use (for calculating the
-	// number of locks to create, for example). Note that the ValueLocMap
+	// number of locks to create, for example). Note that the GroupLocMap
 	// does not create any goroutines itself, but is written to allow
 	// concurrent access. Defaults to GOMAXPROCS.
 	Workers int
@@ -121,11 +121,11 @@ func resolveConfig(c *Config) *Config {
 	if c != nil {
 		*cfg = *c
 	}
-	if env := os.Getenv("VALUELOCMAP_WORKERS"); env != "" {
+	if env := os.Getenv("GROUPLOCMAP_WORKERS"); env != "" {
 		if val, err := strconv.Atoi(env); err == nil {
 			cfg.Workers = val
 		}
-	} else if env = os.Getenv("VALUESTORE_WORKERS"); env != "" {
+	} else if env = os.Getenv("GROUPSTORE_WORKERS"); env != "" {
 		if val, err := strconv.Atoi(env); err == nil {
 			cfg.Workers = val
 		}
@@ -136,7 +136,7 @@ func resolveConfig(c *Config) *Config {
 	if cfg.Workers < 1 { // GOMAXPROCS should always give >= 1, but in case
 		cfg.Workers = 1
 	}
-	if env := os.Getenv("VALUELOCMAP_ROOTS"); env != "" {
+	if env := os.Getenv("GROUPLOCMAP_ROOTS"); env != "" {
 		if val, err := strconv.Atoi(env); err == nil {
 			cfg.Roots = val
 		}
@@ -148,7 +148,7 @@ func resolveConfig(c *Config) *Config {
 	if cfg.Roots < 2 {
 		cfg.Roots = 2
 	}
-	if env := os.Getenv("VALUELOCMAP_PAGESIZE"); env != "" {
+	if env := os.Getenv("GROUPLOCMAP_PAGESIZE"); env != "" {
 		if val, err := strconv.Atoi(env); err == nil {
 			cfg.PageSize = val
 		}
@@ -162,7 +162,7 @@ func resolveConfig(c *Config) *Config {
 	if cfg.PageSize < pageSizeFloor {
 		cfg.PageSize = pageSizeFloor
 	}
-	if env := os.Getenv("VALUELOCMAP_SPLITMULTIPLIER"); env != "" {
+	if env := os.Getenv("GROUPLOCMAP_SPLITMULTIPLIER"); env != "" {
 		if val, err := strconv.ParseFloat(env, 64); err == nil {
 			cfg.SplitMultiplier = val
 		}
@@ -173,7 +173,7 @@ func resolveConfig(c *Config) *Config {
 	return cfg
 }
 
-type valueLocMap struct {
+type groupLocMap struct {
 	bits            uint32
 	lowMask         uint32
 	entriesLockMask uint32
@@ -213,10 +213,10 @@ type entry struct { // If the Sizeof this changes, be sure to update docs.
 	next      uint32
 }
 
-// New returns a new ValueLocMap instance using the config options given.
-func New(c *Config) ValueLocMap {
+// New returns a new GroupLocMap instance using the config options given.
+func New(c *Config) GroupLocMap {
 	cfg := resolveConfig(c)
-	vlm := &valueLocMap{workers: uint32(cfg.Workers)}
+	vlm := &groupLocMap{workers: uint32(cfg.Workers)}
 	// Minimum bits = 2 and count = 4 because the Page logic needs at least two
 	// bits to work with, so it can split a page when needed.
 	vlm.bits = 2
@@ -253,7 +253,7 @@ func New(c *Config) ValueLocMap {
 	return vlm
 }
 
-func (vlm *valueLocMap) split(n *node) {
+func (vlm *groupLocMap) split(n *node) {
 	n.resizingLock.Lock()
 	if n.resizing {
 		n.resizingLock.Unlock()
@@ -419,7 +419,7 @@ func (vlm *valueLocMap) split(n *node) {
 	n.resizingLock.Unlock()
 }
 
-func (vlm *valueLocMap) merge(n *node) {
+func (vlm *groupLocMap) merge(n *node) {
 	n.resizingLock.Lock()
 	if n.resizing {
 		n.resizingLock.Unlock()
@@ -582,7 +582,7 @@ func (vlm *valueLocMap) merge(n *node) {
 	n.resizingLock.Unlock()
 }
 
-func (vlm *valueLocMap) Get(keyA uint64, keyB uint64) (uint64, uint32, uint32, uint32) {
+func (vlm *groupLocMap) Get(keyA uint64, keyB uint64) (uint64, uint32, uint32, uint32) {
 	n := &vlm.roots[keyA>>vlm.rootShift]
 	n.lock.RLock()
 	for {
@@ -636,7 +636,7 @@ func (vlm *valueLocMap) Get(keyA uint64, keyB uint64) (uint64, uint32, uint32, u
 	return 0, 0, 0, 0
 }
 
-func (vlm *valueLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint32, evenIfSameTimestamp bool) uint64 {
+func (vlm *groupLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint32, evenIfSameTimestamp bool) uint64 {
 	n := &vlm.roots[keyA>>vlm.rootShift]
 	var pn *node
 	n.lock.RLock()
@@ -805,7 +805,7 @@ func (vlm *valueLocMap) Set(keyA uint64, keyB uint64, timestamp uint64, blockID 
 	return 0
 }
 
-func (vlm *valueLocMap) Discard(start uint64, stop uint64, mask uint64) {
+func (vlm *groupLocMap) Discard(start uint64, stop uint64, mask uint64) {
 	for i := 0; i < len(vlm.roots); i++ {
 		n := &vlm.roots[i]
 		n.lock.RLock() // Will be released by discard
@@ -814,7 +814,7 @@ func (vlm *valueLocMap) Discard(start uint64, stop uint64, mask uint64) {
 }
 
 // Will call n.lock.RUnlock()
-func (vlm *valueLocMap) discard(start uint64, stop uint64, mask uint64, n *node) {
+func (vlm *groupLocMap) discard(start uint64, stop uint64, mask uint64, n *node) {
 	if start > n.rangeStop || stop < n.rangeStart {
 		n.lock.RUnlock()
 		return
@@ -900,7 +900,7 @@ func (vlm *valueLocMap) discard(start uint64, stop uint64, mask uint64, n *node)
 	n.lock.RUnlock()
 }
 
-func (vlm *valueLocMap) ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(keyA uint64, keyB uint64, timestamp uint64, length uint32) bool) (uint64, bool) {
+func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(keyA uint64, keyB uint64, timestamp uint64, length uint32) bool) (uint64, bool) {
 	var stopped uint64
 	var more bool
 	for i := 0; i < len(vlm.roots); i++ {
@@ -915,7 +915,7 @@ func (vlm *valueLocMap) ScanCallback(start uint64, stop uint64, mask uint64, not
 }
 
 // Will call n.lock.RUnlock()
-func (vlm *valueLocMap) scanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(keyA uint64, keyB uint64, timestamp uint64, length uint32) bool, n *node) (uint64, uint64, bool) {
+func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(keyA uint64, keyB uint64, timestamp uint64, length uint32) bool, n *node) (uint64, uint64, bool) {
 	if start > n.rangeStop || stop < n.rangeStart {
 		n.lock.RUnlock()
 		return max, stop, false
@@ -1049,11 +1049,11 @@ type Stats struct {
 	inactive          uint64
 }
 
-func (vlm *valueLocMap) SetInactiveMask(mask uint64) {
+func (vlm *groupLocMap) SetInactiveMask(mask uint64) {
 	vlm.inactiveMask = mask
 }
 
-func (vlm *valueLocMap) Stats(debug bool) *Stats {
+func (vlm *groupLocMap) Stats(debug bool) *Stats {
 	s := &Stats{
 		inactiveMask:      vlm.inactiveMask,
 		statsDebug:        debug,
@@ -1075,7 +1075,7 @@ func (vlm *valueLocMap) Stats(debug bool) *Stats {
 }
 
 // Will call n.lock.RUnlock()
-func (vlm *valueLocMap) stats(s *Stats, n *node, depth int) {
+func (vlm *groupLocMap) stats(s *Stats, n *node, depth int) {
 	if s.statsDebug {
 		s.nodes++
 		for len(s.depthCounts) <= depth {

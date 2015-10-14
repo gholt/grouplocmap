@@ -1,7 +1,7 @@
-# ValueLocMap
+# GroupLocMap
 ## Development Repository
 
-Package valuelocmap provides a concurrency-safe data structure that maps
+Package grouplocmap provides a concurrency-safe data structure that maps
 keys to value locations. A key is 128 bits and is specified using two
 uint64s (keyA, keyB). A value location is specified using a blockID, offset,
 and length triplet. Each mapping is assigned a timestamp and the greatest
@@ -21,7 +21,7 @@ a slice empties, it is merged with its pair in the tree structure and the
 tree shrinks. The tree is balanced by high bits of the key, and locations
 are distributed in the slices by the low bits.
 
-[API Documentation](http://godoc.org/github.com/gholt/valuelocmap)
+[API Documentation](http://godoc.org/github.com/gholt/grouplocmap)
 
 This is the latest development area for the package.  
 Eventually a stable version of the package will be established but, for now,

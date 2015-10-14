@@ -1,4 +1,4 @@
-package valuelocmap
+package grouplocmap
 
 import (
 	"encoding/binary"
@@ -11,18 +11,18 @@ import (
 )
 
 func TestNewRoots(t *testing.T) {
-	vlm := New(&Config{Roots: 16}).(*valueLocMap)
+	vlm := New(&Config{Roots: 16}).(*groupLocMap)
 	if len(vlm.roots) < 16 {
 		t.Fatal(len(vlm.roots))
 	}
-	vlm = New(&Config{Roots: 17}).(*valueLocMap)
+	vlm = New(&Config{Roots: 17}).(*groupLocMap)
 	if len(vlm.roots) < 17 {
 		t.Fatal(len(vlm.roots))
 	}
 }
 
 func TestSetNewKeyOldTimestampIs0AndNewKeySaved(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp := uint64(2)
@@ -49,7 +49,7 @@ func TestSetNewKeyOldTimestampIs0AndNewKeySaved(t *testing.T) {
 }
 
 func TestSetOverwriteKeyOldTimestampIsOldAndOverwriteWins(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(2)
@@ -81,7 +81,7 @@ func TestSetOverwriteKeyOldTimestampIsOldAndOverwriteWins(t *testing.T) {
 }
 
 func TestSetOldOverwriteKeyOldTimestampIsPreviousAndPreviousWins(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(4)
@@ -113,7 +113,7 @@ func TestSetOldOverwriteKeyOldTimestampIsPreviousAndPreviousWins(t *testing.T) {
 }
 
 func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteIgnored(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(2)
@@ -145,7 +145,7 @@ func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteIgnored(t *testing.T) {
 }
 
 func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteWins(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(2)
@@ -177,7 +177,7 @@ func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteWins(t *testing.T) {
 }
 
 func TestSetOverflowingKeys(t *testing.T) {
-	vlm := New(&Config{Roots: 1, PageSize: 1}).(*valueLocMap)
+	vlm := New(&Config{Roots: 1, PageSize: 1}).(*groupLocMap)
 	keyA1 := uint64(0)
 	keyB1 := uint64(0)
 	timestamp1 := uint64(2)
@@ -227,7 +227,7 @@ func TestSetOverflowingKeys(t *testing.T) {
 }
 
 func TestSetOverflowingKeysReuse(t *testing.T) {
-	vlm := New(&Config{Roots: 1, PageSize: 1}).(*valueLocMap)
+	vlm := New(&Config{Roots: 1, PageSize: 1}).(*groupLocMap)
 	keyA1 := uint64(0)
 	keyB1 := uint64(0)
 	timestamp1 := uint64(2)
@@ -320,7 +320,7 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 }
 
 func TestSetOverflowingKeysLots(t *testing.T) {
-	vlm := New(&Config{Roots: 1, PageSize: 1, SplitMultiplier: 1000}).(*valueLocMap)
+	vlm := New(&Config{Roots: 1, PageSize: 1, SplitMultiplier: 1000}).(*groupLocMap)
 	keyA := uint64(0)
 	timestamp := uint64(2)
 	blockID := uint32(1)
@@ -513,7 +513,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 }
 
 func TestSetNewKeyBlockID0OldTimestampIs0AndNoEffect(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp := uint64(2)
@@ -540,7 +540,7 @@ func TestSetNewKeyBlockID0OldTimestampIs0AndNoEffect(t *testing.T) {
 }
 
 func TestSetOverwriteKeyBlockID0OldTimestampIsOldAndOverwriteWins(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(2)
@@ -572,7 +572,7 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsOldAndOverwriteWins(t *testing.T) 
 }
 
 func TestSetOldOverwriteKeyBlockID0OldTimestampIsPreviousAndPreviousWins(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(4)
@@ -604,7 +604,7 @@ func TestSetOldOverwriteKeyBlockID0OldTimestampIsPreviousAndPreviousWins(t *test
 }
 
 func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteIgnored(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(2)
@@ -636,7 +636,7 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteIgnored(t *testing
 }
 
 func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteWins(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(2)
@@ -668,7 +668,7 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteWins(t *testing.T)
 }
 
 func TestDiscardMaskNoMatch(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(1)
@@ -693,7 +693,7 @@ func TestDiscardMaskNoMatch(t *testing.T) {
 }
 
 func TestDiscardMaskMatch(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA := uint64(0)
 	keyB := uint64(0)
 	timestamp1 := uint64(1)
@@ -718,7 +718,7 @@ func TestDiscardMaskMatch(t *testing.T) {
 }
 
 func TestScanCallbackBasic(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA1 := uint64(0)
 	keyB1 := uint64(0)
 	timestamp1 := uint64(1)
@@ -753,7 +753,7 @@ func TestScanCallbackBasic(t *testing.T) {
 }
 
 func TestScanCallbackRangeMiss(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA1 := uint64(100)
 	keyB1 := uint64(0)
 	timestamp1 := uint64(1)
@@ -792,7 +792,7 @@ func TestScanCallbackRangeMiss(t *testing.T) {
 }
 
 func TestScanCallbackMask(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA1 := uint64(0)
 	keyB1 := uint64(0)
 	timestamp1 := uint64(1)
@@ -841,7 +841,7 @@ func TestScanCallbackMask(t *testing.T) {
 }
 
 func TestScanCallbackNotMask(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA1 := uint64(0)
 	keyB1 := uint64(0)
 	timestamp1 := uint64(1)
@@ -890,7 +890,7 @@ func TestScanCallbackNotMask(t *testing.T) {
 }
 
 func TestScanCallbackCutoff(t *testing.T) {
-	vlm := New(nil).(*valueLocMap)
+	vlm := New(nil).(*groupLocMap)
 	keyA1 := uint64(0)
 	keyB1 := uint64(0)
 	timestamp1 := uint64(123)
@@ -939,7 +939,7 @@ func TestScanCallbackCutoff(t *testing.T) {
 }
 
 func TestScanCallbackMax(t *testing.T) {
-	vlm := New(&Config{Roots: 128}).(*valueLocMap)
+	vlm := New(&Config{Roots: 128}).(*groupLocMap)
 	keyA := uint64(0)
 	for i := 0; i < 4000; i++ {
 		keyA += 0x0010000000000000
@@ -984,7 +984,7 @@ func TestStatsBasic(t *testing.T) {
 	// Roots is set low to get deeper quicker.
 	// PageSize is set low to cause more page creation and deletion.
 	// SplitMultiplier is set low to get splits to happen quicker.
-	vlm := New(&Config{Workers: 1, Roots: 1, PageSize: 512, SplitMultiplier: 1}).(*valueLocMap)
+	vlm := New(&Config{Workers: 1, Roots: 1, PageSize: 512, SplitMultiplier: 1}).(*groupLocMap)
 	keyspace := make([]byte, count*16)
 	brimutil.NewSeededScrambled(int64(seed)).Read(keyspace)
 	// since scrambled doesn't guarantee uniqueness, we do that in the middle
@@ -1058,7 +1058,7 @@ func TestExerciseSplitMergeDiscard(t *testing.T) {
 	// Roots is set low to get deeper quicker.
 	// PageSize is set low to cause more page creation and deletion.
 	// SplitMultiplier is set low to get splits to happen quicker.
-	vlm := New(&Config{Workers: 1, Roots: 1, PageSize: 512, SplitMultiplier: 1}).(*valueLocMap)
+	vlm := New(&Config{Workers: 1, Roots: 1, PageSize: 512, SplitMultiplier: 1}).(*groupLocMap)
 	// Override the mergeLevel to make it happen more often.
 	for i := 0; i < len(vlm.roots); i++ {
 		vlm.roots[i].mergeLevel = vlm.roots[i].splitLevel - 2
