@@ -45,9 +45,9 @@ import (
 // GroupLocMap is an interface for tracking the mappings from keys to the
 // locations of their values.
 type GroupLocMap interface {
-	// Get returns timestamp, blockID, offset, length, nameChecksum for
-	// groupKeyA, groupKeyB, memberKeyA, memberKeyB.
-	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameChecksum uint16) (timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksumStored uint16)
+	// Get returns timestamp, blockID, offset, length for groupKeyA, groupKeyB,
+	// memberKeyA, memberKeyB, nameChecksum.
+	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameChecksum uint16) (timestamp uint64, blockID uint32, offset uint32, length uint16)
 	// Set stores timestamp, blockID, offset, length, nameChecksum for
 	// groupKeyA, groupKeyB, memberKeyA, memberKeyB and returns the previous
 	// timestamp stored. If a newer item is already stored for groupKeyA,
@@ -598,14 +598,14 @@ func (vlm *groupLocMap) merge(n *node) {
 	n.resizingLock.Unlock()
 }
 
-func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameChecksum uint16) (uint64, uint32, uint32, uint16, uint16) {
+func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameChecksum uint16) (uint64, uint32, uint32, uint16) {
 	n := &vlm.roots[groupKeyA>>vlm.rootShift]
 	n.lock.RLock()
 	for {
 		if n.a == nil {
 			if n.entries == nil {
 				n.lock.RUnlock()
-				return 0, 0, 0, 0, 0
+				return 0, 0, 0, 0
 			}
 			break
 		}
@@ -620,53 +620,36 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	}
 	b := vlm.bits
 	lm := vlm.lowMask
-	stop := (uint32(groupKeyB<<16) | uint32(nameChecksum)) & lm
-	i := stop
-	for {
-		l := &n.entriesLocks[i&vlm.entriesLockMask]
-		ol := &n.overflowLock
-		e := &n.entries[i]
-		l.RLock()
-		if e.blockID == 0 {
-			l.RUnlock()
-			i++
-			if i > vlm.lowMask {
-				i = 0
-			}
-			if i == stop {
-				break
-			}
-			continue
-		}
-		for {
-			if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB && e.memberKeyA == memberKeyA && e.memberKeyB == memberKeyB {
-				rt := e.timestamp
-				rb := e.blockID
-				ro := e.offset
-				rl := e.length
-				rn := e.nameChecksum
-				l.RUnlock()
-				n.lock.RUnlock()
-				return rt, rb, ro, rl, rn
-			}
-			if e.next == 0 {
-				break
-			}
-			ol.RLock()
-			e = &n.overflow[e.next>>b][e.next&lm]
-			ol.RUnlock()
-		}
+	i := (uint32(groupKeyB<<16) | uint32(nameChecksum)) & lm
+	l := &n.entriesLocks[i&vlm.entriesLockMask]
+	ol := &n.overflowLock
+	e := &n.entries[i]
+	l.RLock()
+	if e.blockID == 0 {
 		l.RUnlock()
-		i++
-		if i > vlm.lowMask {
-			i = 0
+		n.lock.RUnlock()
+		return 0, 0, 0, 0
+	}
+	for {
+		if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB && e.memberKeyA == memberKeyA && e.memberKeyB == memberKeyB && e.nameChecksum == nameChecksum {
+			rt := e.timestamp
+			rb := e.blockID
+			ro := e.offset
+			rl := e.length
+			l.RUnlock()
+			n.lock.RUnlock()
+			return rt, rb, ro, rl
 		}
-		if i == stop {
+		if e.next == 0 {
 			break
 		}
+		ol.RLock()
+		e = &n.overflow[e.next>>b][e.next&lm]
+		ol.RUnlock()
 	}
+	l.RUnlock()
 	n.lock.RUnlock()
-	return 0, 0, 0, 0, 0
+	return 0, 0, 0, 0
 }
 
 func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksum uint16, evenIfSameTimestamp bool) uint64 {

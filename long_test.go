@@ -57,11 +57,11 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 		}
 	}
 	kt := func(ka uint64, kb uint64, ts uint64, b uint32, o uint32, l uint16) {
-		vlm.Set(ka, kb, 12345, 12345, ts, b, o, l, 0, false)
+		vlm.Set(ka, kb, 12345, 12345, ts, b, o, l, 789, false)
 		if ts&2 != 0 { // test calls discard with 2 as a mask quite often
 			return
 		}
-		ts2, b2, o2, l2, n2 := vlm.Get(ka, kb, 12345, 12345, 789)
+		ts2, b2, o2, l2 := vlm.Get(ka, kb, 12345, 12345, 789)
 		if (b != 0 && ts2 != ts) || (b == 0 && ts2 != 0) {
 			panic(fmt.Sprintf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, ts2))
 		}
@@ -73,9 +73,6 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 		}
 		if l2 != l {
 			panic(fmt.Sprintf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, l2))
-		}
-		if n2 != 0 {
-			panic(fmt.Sprintf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, n2))
 		}
 	}
 	halfBytes := count / 2 * 16

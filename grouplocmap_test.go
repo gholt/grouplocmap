@@ -29,11 +29,11 @@ func TestSetNewKeyOldTimestampIs0AndNewKeySaved(t *testing.T) {
 	blockID := uint32(1)
 	offset := uint32(0)
 	length := uint16(0)
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 0, false)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 789, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != timestamp {
 		t.Fatal(timestampGet, timestamp)
 	}
@@ -46,9 +46,6 @@ func TestSetNewKeyOldTimestampIs0AndNewKeySaved(t *testing.T) {
 	if lengthGet != length {
 		t.Fatal(lengthGet, length)
 	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
-	}
 }
 
 func TestSetOverwriteKeyOldTimestampIsOldAndOverwriteWins(t *testing.T) {
@@ -59,16 +56,16 @@ func TestSetOverwriteKeyOldTimestampIsOldAndOverwriteWins(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	timestamp2 := timestamp1 + 2
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, false)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != timestamp2 {
 		t.Fatal(timestampGet, timestamp2)
 	}
@@ -80,9 +77,6 @@ func TestSetOverwriteKeyOldTimestampIsOldAndOverwriteWins(t *testing.T) {
 	}
 	if lengthGet != length2 {
 		t.Fatal(lengthGet, length2)
-	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
 	}
 }
 
@@ -94,16 +88,16 @@ func TestSetOldOverwriteKeyOldTimestampIsPreviousAndPreviousWins(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	timestamp2 := timestamp1 - 2
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, false)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != timestamp1 {
 		t.Fatal(timestampGet, timestamp1)
 	}
@@ -115,9 +109,6 @@ func TestSetOldOverwriteKeyOldTimestampIsPreviousAndPreviousWins(t *testing.T) {
 	}
 	if lengthGet != length1 {
 		t.Fatal(lengthGet, length1)
-	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
 	}
 }
 
@@ -129,16 +120,16 @@ func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteIgnored(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	timestamp2 := timestamp1
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, false)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != timestamp1 {
 		t.Fatal(timestampGet, timestamp1)
 	}
@@ -150,9 +141,6 @@ func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteIgnored(t *testing.T) {
 	}
 	if lengthGet != length1 {
 		t.Fatal(lengthGet, length1)
-	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
 	}
 }
 
@@ -164,16 +152,16 @@ func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteWins(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	timestamp2 := timestamp1
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, true)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, true)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != timestamp2 {
 		t.Fatal(timestampGet, timestamp2)
 	}
@@ -185,9 +173,6 @@ func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteWins(t *testing.T) {
 	}
 	if lengthGet != length2 {
 		t.Fatal(lengthGet, length2)
-	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
 	}
 }
 
@@ -199,11 +184,11 @@ func TestSetOverflowingKeys(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	oldTimestamp := vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	oldTimestamp := vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA1, keyB1, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA1, keyB1, 12345, 12345, 789)
 	if timestampGet != timestamp1 {
 		t.Fatal(timestampGet, timestamp1)
 	}
@@ -222,11 +207,11 @@ func TestSetOverflowingKeys(t *testing.T) {
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp = vlm.Set(keyA2, keyB2, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, false)
+	oldTimestamp = vlm.Set(keyA2, keyB2, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet = vlm.Get(keyA2, keyB2, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet = vlm.Get(keyA2, keyB2, 12345, 12345, 789)
 	if timestampGet != timestamp2 {
 		t.Fatal(timestampGet, timestamp2)
 	}
@@ -238,9 +223,6 @@ func TestSetOverflowingKeys(t *testing.T) {
 	}
 	if lengthGet != length2 {
 		t.Fatal(lengthGet, length2)
-	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
 	}
 }
 
@@ -252,11 +234,11 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	oldTimestamp := vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	oldTimestamp := vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA1, keyB1, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA1, keyB1, 12345, 12345, 789)
 	if timestampGet != timestamp1 {
 		t.Fatal(timestampGet, timestamp1)
 	}
@@ -275,11 +257,11 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp = vlm.Set(keyA2, keyB2, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, false)
+	oldTimestamp = vlm.Set(keyA2, keyB2, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet = vlm.Get(keyA2, keyB2, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet = vlm.Get(keyA2, keyB2, 12345, 12345, 789)
 	if timestampGet != timestamp2 {
 		t.Fatal(timestampGet, timestamp2)
 	}
@@ -292,11 +274,11 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	if lengthGet != length2 {
 		t.Fatal(lengthGet, length2)
 	}
-	oldTimestamp = vlm.Set(keyA2, keyB2, 12345, 12345, timestamp2, uint32(0), offset2, length2, 0, true)
+	oldTimestamp = vlm.Set(keyA2, keyB2, 12345, 12345, timestamp2, uint32(0), offset2, length2, 789, true)
 	if oldTimestamp != timestamp2 {
 		t.Fatal(oldTimestamp)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet = vlm.Get(keyA2, keyB2, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet = vlm.Get(keyA2, keyB2, 12345, 12345, 789)
 	if timestampGet != 0 {
 		t.Fatal(timestampGet)
 	}
@@ -315,11 +297,11 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	blockID3 := blockID1 + 2
 	offset3 := offset1 + 2
 	length3 := length1 + 2
-	oldTimestamp = vlm.Set(keyA3, keyB3, 12345, 12345, timestamp3, blockID3, offset3, length3, 0, false)
+	oldTimestamp = vlm.Set(keyA3, keyB3, 12345, 12345, timestamp3, blockID3, offset3, length3, 789, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet = vlm.Get(keyA3, keyB3, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet = vlm.Get(keyA3, keyB3, 12345, 12345, 789)
 	if timestampGet != timestamp3 {
 		t.Fatal(timestampGet, timestamp3)
 	}
@@ -335,9 +317,6 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	if vlm.roots[0].used != 2 {
 		t.Fatal(vlm.roots[0].used)
 	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
-	}
 }
 
 func TestSetOverflowingKeysLots(t *testing.T) {
@@ -348,7 +327,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	offset := uint32(2)
 	length := uint16(3)
 	for keyB := uint64(0); keyB < 100; keyB++ {
-		vlm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 0, false)
+		vlm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 789, false)
 		blockID++
 		offset++
 		length++
@@ -363,7 +342,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	offset = uint32(2)
 	length = uint16(3)
 	for keyB := uint64(0); keyB < 100; keyB++ {
-		timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+		timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 		if timestampGet != timestamp {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampGet, timestamp)
 		}
@@ -376,9 +355,6 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 		if lengthGet != length {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, lengthGet, length)
 		}
-		if nameChecksumGet != 0 {
-			t.Fatal(nameChecksumGet, 0)
-		}
 		blockID++
 		offset++
 		length++
@@ -388,7 +364,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	offset = uint32(3)
 	length = uint16(4)
 	for keyB := uint64(0); keyB < 75; keyB++ {
-		timestampSet := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID, offset, length, 0, false)
+		timestampSet := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID, offset, length, 789, false)
 		if timestampSet != timestamp {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampSet, timestamp)
 		}
@@ -400,7 +376,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	offset = uint32(3)
 	length = uint16(4)
 	for keyB := uint64(0); keyB < 75; keyB++ {
-		timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+		timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 		if timestampGet != timestamp2 {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampGet, timestamp2)
 		}
@@ -413,9 +389,6 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 		if lengthGet != length {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, lengthGet, length)
 		}
-		if nameChecksumGet != 0 {
-			t.Fatal(nameChecksumGet, 0)
-		}
 		blockID++
 		offset++
 		length++
@@ -425,7 +398,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	}
 	timestamp3 := timestamp2 + 2
 	for keyB := uint64(0); keyB < 50; keyB++ {
-		timestampSet := vlm.Set(keyA, keyB, 12345, 12345, timestamp3, uint32(0), uint32(0), uint16(0), 0, false)
+		timestampSet := vlm.Set(keyA, keyB, 12345, 12345, timestamp3, uint32(0), uint32(0), uint16(0), 789, false)
 		if timestampSet != timestamp2 {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampSet, timestamp2)
 		}
@@ -437,7 +410,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	offset = uint32(3)
 	length = uint16(4)
 	for keyB := uint64(0); keyB < 50; keyB++ {
-		timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+		timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 		if timestampGet != 0 {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampGet, 0)
 		}
@@ -450,9 +423,6 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 		if lengthGet != 0 {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, lengthGet, 0)
 		}
-		if nameChecksumGet != 0 {
-			t.Fatal(nameChecksumGet, 0)
-		}
 		blockID++
 		offset++
 		length++
@@ -462,7 +432,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	offset = uint32(8)
 	length = uint16(9)
 	for keyB := uint64(200); keyB < 300; keyB++ {
-		vlm.Set(keyA, keyB, 12345, 12345, timestamp4, blockID, offset, length, 0, false)
+		vlm.Set(keyA, keyB, 12345, 12345, timestamp4, blockID, offset, length, 789, false)
 		blockID++
 		offset++
 		length++
@@ -474,7 +444,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	offset = uint32(2)
 	length = uint16(3)
 	for keyB := uint64(0); keyB < 100; keyB++ {
-		timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+		timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 		if keyB < 50 {
 			if timestampGet != 0 {
 				t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampGet, 0)
@@ -487,9 +457,6 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 			}
 			if lengthGet != 0 {
 				t.Fatalf("%016x %016x %d %d", keyA, keyB, lengthGet, 0)
-			}
-			if nameChecksumGet != 0 {
-				t.Fatal(nameChecksumGet, 0)
 			}
 		} else if keyB < 75 {
 			if timestampGet != timestamp2 {
@@ -504,9 +471,6 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 			if lengthGet != length+1 {
 				t.Fatalf("%016x %016x %d %d", keyA, keyB, lengthGet, length+1)
 			}
-			if nameChecksumGet != 0 {
-				t.Fatal(nameChecksumGet, 0)
-			}
 		} else {
 			if timestampGet != timestamp {
 				t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampGet, timestamp)
@@ -520,9 +484,6 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 			if lengthGet != length {
 				t.Fatalf("%016x %016x %d %d", keyA, keyB, lengthGet, length)
 			}
-			if nameChecksumGet != 0 {
-				t.Fatal(nameChecksumGet, 0)
-			}
 		}
 		blockID++
 		offset++
@@ -532,7 +493,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	offset = uint32(8)
 	length = uint16(9)
 	for keyB := uint64(200); keyB < 300; keyB++ {
-		timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+		timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 		if timestampGet != timestamp4 {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampGet, timestamp4)
 		}
@@ -544,9 +505,6 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 		}
 		if lengthGet != length {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, lengthGet, length)
-		}
-		if nameChecksumGet != 0 {
-			t.Fatal(nameChecksumGet, 0)
 		}
 		blockID++
 		offset++
@@ -562,11 +520,11 @@ func TestSetNewKeyBlockID0OldTimestampIs0AndNoEffect(t *testing.T) {
 	blockID := uint32(0)
 	offset := uint32(4)
 	length := uint16(5)
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 0, false)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 789, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != 0 {
 		t.Fatal(timestampGet, 0)
 	}
@@ -578,9 +536,6 @@ func TestSetNewKeyBlockID0OldTimestampIs0AndNoEffect(t *testing.T) {
 	}
 	if lengthGet != 0 {
 		t.Fatal(lengthGet, 0)
-	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
 	}
 }
 
@@ -592,16 +547,16 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsOldAndOverwriteWins(t *testing.T) 
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	timestamp2 := timestamp1 + 2
 	blockID2 := uint32(0)
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, false)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != 0 {
 		t.Fatal(timestampGet, 0)
 	}
@@ -613,9 +568,6 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsOldAndOverwriteWins(t *testing.T) 
 	}
 	if lengthGet != 0 {
 		t.Fatal(lengthGet, 0)
-	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
 	}
 }
 
@@ -627,16 +579,16 @@ func TestSetOldOverwriteKeyBlockID0OldTimestampIsPreviousAndPreviousWins(t *test
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	timestamp2 := timestamp1 - 2
 	blockID2 := uint32(0)
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, false)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != timestamp1 {
 		t.Fatal(timestampGet, timestamp1)
 	}
@@ -648,9 +600,6 @@ func TestSetOldOverwriteKeyBlockID0OldTimestampIsPreviousAndPreviousWins(t *test
 	}
 	if lengthGet != length1 {
 		t.Fatal(lengthGet, length1)
-	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
 	}
 }
 
@@ -662,16 +611,16 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteIgnored(t *testing
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	timestamp2 := timestamp1
 	blockID2 := uint32(0)
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, false)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != timestamp1 {
 		t.Fatal(timestampGet, timestamp1)
 	}
@@ -684,9 +633,6 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteIgnored(t *testing
 	if lengthGet != length1 {
 		t.Fatal(lengthGet, length1)
 	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
-	}
 }
 
 func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteWins(t *testing.T) {
@@ -697,16 +643,16 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteWins(t *testing.T)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
 	length1 := uint16(0)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	timestamp2 := timestamp1
 	blockID2 := uint32(0)
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 0, true)
+	oldTimestamp := vlm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, true)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
-	timestampGet, blockIDGet, offsetGet, lengthGet, nameChecksumGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestampGet, blockIDGet, offsetGet, lengthGet := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestampGet != 0 {
 		t.Fatal(timestampGet, 0)
 	}
@@ -719,9 +665,6 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteWins(t *testing.T)
 	if lengthGet != 0 {
 		t.Fatal(lengthGet, 0)
 	}
-	if nameChecksumGet != 0 {
-		t.Fatal(nameChecksumGet, 0)
-	}
 }
 
 func TestDiscardMaskNoMatch(t *testing.T) {
@@ -732,9 +675,9 @@ func TestDiscardMaskNoMatch(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
 	length1 := uint16(3)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	vlm.Discard(0, math.MaxUint64, 2)
-	timestamp2, blockID2, offset2, length2, nameChecksum2 := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestamp2, blockID2, offset2, length2 := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestamp2 != timestamp1 {
 		t.Fatal(timestamp2)
 	}
@@ -747,9 +690,6 @@ func TestDiscardMaskNoMatch(t *testing.T) {
 	if length2 != length1 {
 		t.Fatal(length2)
 	}
-	if nameChecksum2 != 0 {
-		t.Fatal(nameChecksum2, 0)
-	}
 }
 
 func TestDiscardMaskMatch(t *testing.T) {
@@ -760,9 +700,9 @@ func TestDiscardMaskMatch(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
 	length1 := uint16(3)
-	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	vlm.Discard(0, math.MaxUint64, 1)
-	timestamp2, blockID2, offset2, length2, nameChecksum2 := vlm.Get(keyA, keyB, 12345, 12345, 789)
+	timestamp2, blockID2, offset2, length2 := vlm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestamp2 != 0 {
 		t.Fatal(timestamp2)
 	}
@@ -775,9 +715,6 @@ func TestDiscardMaskMatch(t *testing.T) {
 	if length2 != 0 {
 		t.Fatal(length2)
 	}
-	if nameChecksum2 != 0 {
-		t.Fatal(nameChecksum2, 0)
-	}
 }
 
 func TestScanCallbackBasic(t *testing.T) {
@@ -788,7 +725,7 @@ func TestScanCallbackBasic(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
 	length1 := uint16(3)
-	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	good := false
 	stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB3 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
 		if groupKeyA2 == keyA1 && groupKeyB2 == keyB1 {
@@ -823,7 +760,7 @@ func TestScanCallbackRangeMiss(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
 	length1 := uint16(3)
-	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	good := false
 	stopped, more := vlm.ScanCallback(101, math.MaxUint64, 0, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
 		t.Fatalf("%x %x %d %d\n", groupKeyA2, groupKeyB2, timestamp2, length2)
@@ -862,7 +799,7 @@ func TestScanCallbackMask(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
 	length1 := uint16(3)
-	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	good := false
 	stopped, more := vlm.ScanCallback(0, math.MaxUint64, 1, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
 		if groupKeyA2 == keyA1 && groupKeyB2 == keyB1 {
@@ -911,7 +848,7 @@ func TestScanCallbackNotMask(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
 	length1 := uint16(3)
-	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	good := false
 	stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 2, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
 		if groupKeyA2 == keyA1 && groupKeyB2 == keyB1 {
@@ -960,7 +897,7 @@ func TestScanCallbackCutoff(t *testing.T) {
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
 	length1 := uint16(3)
-	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 0, false)
+	vlm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
 	good := false
 	stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, 123, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
 		if groupKeyA2 == keyA1 && groupKeyB2 == keyB1 {
@@ -1006,7 +943,7 @@ func TestScanCallbackMax(t *testing.T) {
 	keyA := uint64(0)
 	for i := 0; i < 4000; i++ {
 		keyA += 0x0010000000000000
-		vlm.Set(keyA, 0, 12345, 12345, 1, 2, 3, 4, 0, false)
+		vlm.Set(keyA, 0, 12345, 12345, 1, 2, 3, 4, 789, false)
 	}
 	count := 0
 	stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, 50, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
@@ -1064,7 +1001,7 @@ func TestStatsBasic(t *testing.T) {
 			ts = 2
 			maskedCount++
 		}
-		vlm.Set(ka, kb, 12345, 12345, ts, 2, 3, 4, 0, false)
+		vlm.Set(ka, kb, 12345, 12345, ts, 2, 3, 4, 789, false)
 	}
 	vlm.SetInactiveMask(0)
 	stats := vlm.Stats(false)
@@ -1137,8 +1074,8 @@ func TestExerciseSplitMergeDiscard(t *testing.T) {
 		binary.BigEndian.PutUint32(keyspace[j*16+4:], j)
 	}
 	kt := func(ka uint64, kb uint64, ts uint64, b uint32, o uint32, l uint16) {
-		vlm.Set(ka, kb, 12345, 12345, ts, b, o, l, 0, false)
-		ts2, b2, o2, l2, n2 := vlm.Get(ka, kb, 12345, 12345, 789)
+		vlm.Set(ka, kb, 12345, 12345, ts, b, o, l, 789, false)
+		ts2, b2, o2, l2 := vlm.Get(ka, kb, 12345, 12345, 789)
 		if (b != 0 && ts2 != ts) || (b == 0 && ts2 != 0) {
 			t.Fatalf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, ts2)
 		}
@@ -1150,9 +1087,6 @@ func TestExerciseSplitMergeDiscard(t *testing.T) {
 		}
 		if l2 != l {
 			t.Fatalf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, l2)
-		}
-		if n2 != 0 {
-			t.Fatalf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, n2)
 		}
 	}
 	for i := len(keyspace) - 16; i >= 0; i -= 16 {
