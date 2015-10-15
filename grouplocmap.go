@@ -332,7 +332,7 @@ func (vlm *groupLocMap) split(n *node) {
 				ae = aen
 				continue
 			}
-			be := &bes[(uint32(aen.memberKeyB<<16)|uint32(aen.nameChecksum))&lm]
+			be := &bes[(uint32(aen.groupKeyB<<16)|uint32(aen.nameChecksum))&lm]
 			if be.blockID == 0 {
 				*be = *aen
 				be.next = 0
@@ -522,7 +522,7 @@ func (vlm *groupLocMap) merge(n *node) {
 			continue
 		}
 		for {
-			ae := &aes[(uint32(be.memberKeyB<<16)|uint32(be.nameChecksum))&lm]
+			ae := &aes[(uint32(be.groupKeyB<<16)|uint32(be.nameChecksum))&lm]
 			if ae.blockID == 0 {
 				*ae = *be
 				ae.next = 0
@@ -619,8 +619,8 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	}
 	b := vlm.bits
 	lm := vlm.lowMask
-	stop := (uint32(memberKeyB<<16) | uint32(nameChecksum)) & lm
-	i := (uint32(memberKeyB<<16) | uint32(nameChecksum)) & lm
+	stop := (uint32(groupKeyB<<16) | uint32(nameChecksum)) & lm
+	i := stop
 	for {
 		l := &n.entriesLocks[i&vlm.entriesLockMask]
 		ol := &n.overflowLock
@@ -698,7 +698,7 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	}
 	b := vlm.bits
 	lm := vlm.lowMask
-	i := (uint32(memberKeyB<<16) | uint32(nameChecksum)) & lm
+	i := (uint32(groupKeyB<<16) | uint32(nameChecksum)) & lm
 	l := &n.entriesLocks[i&vlm.entriesLockMask]
 	ol := &n.overflowLock
 	e := &n.entries[i]
