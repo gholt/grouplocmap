@@ -26,8 +26,9 @@ This implementation essentially uses a tree structure of slices of key to
 location assignments. When a slice fills up, an additional slice is created and
 half the data is moved to the new slice and the tree structure grows. If a
 slice empties, it is merged with its pair in the tree structure and the tree
-shrinks. The tree is balanced by the group key, and locations are distributed
-in the slices by the member key.
+shrinks. The tree is balanced by high bits of the group key, and locations are
+distributed in the slices by a combination of the low bits of the group key and
+the name checksum.
 
 [API Documentation](http://godoc.org/github.com/gholt/grouplocmap)
 
