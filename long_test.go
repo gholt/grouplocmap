@@ -61,7 +61,7 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 		if ts&2 != 0 { // test calls discard with 2 as a mask quite often
 			return
 		}
-		ts2, b2, o2, l2, n2 := vlm.Get(ka, kb, 12345, 12345)
+		ts2, b2, o2, l2, n2 := vlm.Get(ka, kb, 12345, 12345, 789)
 		if (b != 0 && ts2 != ts) || (b == 0 && ts2 != 0) {
 			panic(fmt.Sprintf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, ts2))
 		}

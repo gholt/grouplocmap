@@ -46,7 +46,7 @@ import (
 type GroupLocMap interface {
 	// Get returns timestamp, blockID, offset, length, nameChecksum for
 	// groupKeyA, groupKeyB, memberKeyA, memberKeyB.
-	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64) (timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksum uint16)
+	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameChecksum uint16) (timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksumStored uint16)
 	// Set stores timestamp, blockID, offset, length, nameChecksum for
 	// groupKeyA, groupKeyB, memberKeyA, memberKeyB and returns the previous
 	// timestamp stored. If a newer item is already stored for groupKeyA,
@@ -332,7 +332,7 @@ func (vlm *groupLocMap) split(n *node) {
 				ae = aen
 				continue
 			}
-			be := &bes[uint32(aen.groupKeyB)&lm]
+			be := &bes[(uint32(aen.memberKeyB<<16)|uint32(aen.nameChecksum))&lm]
 			if be.blockID == 0 {
 				*be = *aen
 				be.next = 0
@@ -522,7 +522,7 @@ func (vlm *groupLocMap) merge(n *node) {
 			continue
 		}
 		for {
-			ae := &aes[uint32(be.groupKeyB)&lm]
+			ae := &aes[(uint32(be.memberKeyB<<16)|uint32(be.nameChecksum))&lm]
 			if ae.blockID == 0 {
 				*ae = *be
 				ae.next = 0
@@ -597,7 +597,7 @@ func (vlm *groupLocMap) merge(n *node) {
 	n.resizingLock.Unlock()
 }
 
-func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64) (uint64, uint32, uint32, uint16, uint16) {
+func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameChecksum uint16) (uint64, uint32, uint32, uint16, uint16) {
 	n := &vlm.roots[groupKeyA>>vlm.rootShift]
 	n.lock.RLock()
 	for {
@@ -619,35 +619,51 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	}
 	b := vlm.bits
 	lm := vlm.lowMask
-	i := uint32(groupKeyB) & lm
-	l := &n.entriesLocks[i&vlm.entriesLockMask]
-	ol := &n.overflowLock
-	e := &n.entries[i]
-	l.RLock()
-	if e.blockID == 0 {
-		l.RUnlock()
-		n.lock.RUnlock()
-		return 0, 0, 0, 0, 0
-	}
+	stop := (uint32(memberKeyB<<16) | uint32(nameChecksum)) & lm
+	i := (uint32(memberKeyB<<16) | uint32(nameChecksum)) & lm
 	for {
-		if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB {
-			rt := e.timestamp
-			rb := e.blockID
-			ro := e.offset
-			rl := e.length
-			rn := e.nameChecksum
+		l := &n.entriesLocks[i&vlm.entriesLockMask]
+		ol := &n.overflowLock
+		e := &n.entries[i]
+		l.RLock()
+		if e.blockID == 0 {
 			l.RUnlock()
-			n.lock.RUnlock()
-			return rt, rb, ro, rl, rn
+			i++
+			if i > vlm.lowMask {
+				i = 0
+			}
+			if i == stop {
+				break
+			}
+			continue
 		}
-		if e.next == 0 {
+		for {
+			if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB && e.memberKeyA == memberKeyA && e.memberKeyB == memberKeyB {
+				rt := e.timestamp
+				rb := e.blockID
+				ro := e.offset
+				rl := e.length
+				rn := e.nameChecksum
+				l.RUnlock()
+				n.lock.RUnlock()
+				return rt, rb, ro, rl, rn
+			}
+			if e.next == 0 {
+				break
+			}
+			ol.RLock()
+			e = &n.overflow[e.next>>b][e.next&lm]
+			ol.RUnlock()
+		}
+		l.RUnlock()
+		i++
+		if i > vlm.lowMask {
+			i = 0
+		}
+		if i == stop {
 			break
 		}
-		ol.RLock()
-		e = &n.overflow[e.next>>b][e.next&lm]
-		ol.RUnlock()
 	}
-	l.RUnlock()
 	n.lock.RUnlock()
 	return 0, 0, 0, 0, 0
 }
@@ -682,7 +698,7 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	}
 	b := vlm.bits
 	lm := vlm.lowMask
-	i := uint32(groupKeyB) & lm
+	i := (uint32(memberKeyB<<16) | uint32(nameChecksum)) & lm
 	l := &n.entriesLocks[i&vlm.entriesLockMask]
 	ol := &n.overflowLock
 	e := &n.entries[i]
@@ -691,7 +707,7 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	if e.blockID != 0 {
 		var f uint32
 		for {
-			if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB {
+			if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB && e.memberKeyA == memberKeyA && e.memberKeyB == memberKeyB {
 				t := e.timestamp
 				if e.timestamp > timestamp || (e.timestamp == timestamp && !evenIfSameTimestamp) {
 					l.Unlock()
