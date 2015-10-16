@@ -270,6 +270,14 @@ func New(c *Config) GroupLocMap {
 }
 
 func (vlm *groupLocMap) split(n *node) {
+	newhm := n.highMask >> 1
+	if newhm == 0 {
+		// Can't split anymore since there are no more mask bits to use; means
+		// this area will just be overfull. Everything should work fine, it
+		// just won't be as fast. Really should only reach this issue with
+		// grouplocmap or when keys barely differ in their high 64 bits.
+		return
+	}
 	n.resizingLock.Lock()
 	if n.resizing {
 		n.resizingLock.Unlock()
@@ -287,11 +295,15 @@ func (vlm *groupLocMap) split(n *node) {
 		return
 	}
 	hm := n.highMask
+	var newsl uint32
+	if newhm != 1 {
+		newsl = uint32(float64(vlm.splitLevel) + (rand.Float64()-.5)/5*float64(vlm.splitLevel))
+	}
 	an := &node{
-		highMask:           hm >> 1,
+		highMask:           newhm,
 		rangeStart:         n.rangeStart,
 		rangeStop:          hm - 1 + n.rangeStart,
-		splitLevel:         uint32(float64(vlm.splitLevel) + (rand.Float64()-.5)/5*float64(vlm.splitLevel)),
+		splitLevel:         newsl,
 		mergeLevel:         uint32(rand.Float64() / 10 * float64(vlm.splitLevel)),
 		entries:            n.entries,
 		entriesLocks:       n.entriesLocks,
@@ -299,11 +311,14 @@ func (vlm *groupLocMap) split(n *node) {
 		overflowLowestFree: n.overflowLowestFree,
 		used:               n.used,
 	}
+	if newhm != 1 {
+		newsl = uint32(float64(vlm.splitLevel) + (rand.Float64()-.5)/5*float64(vlm.splitLevel))
+	}
 	bn := &node{
-		highMask:     hm >> 1,
+		highMask:     newhm,
 		rangeStart:   hm + n.rangeStart,
 		rangeStop:    n.rangeStop,
-		splitLevel:   uint32(float64(vlm.splitLevel) + (rand.Float64()-.5)/5*float64(vlm.splitLevel)),
+		splitLevel:   newsl,
 		mergeLevel:   uint32(rand.Float64() / 10 * float64(vlm.splitLevel)),
 		entries:      make([]entry, len(n.entries)),
 		entriesLocks: make([]sync.RWMutex, len(n.entriesLocks)),
@@ -822,7 +837,7 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	u := atomic.AddUint32(&n.used, 1)
 	l.Unlock()
 	n.lock.RUnlock()
-	if u >= n.splitLevel {
+	if n.splitLevel != 0 && u >= n.splitLevel {
 		vlm.split(n)
 	}
 	return 0
