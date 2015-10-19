@@ -42,12 +42,22 @@ import (
 	"gopkg.in/gholt/brimtext.v1"
 )
 
+type GroupLocMapEntry struct {
+	Timestamp    uint64
+	BlockID      uint32
+	Offset       uint32
+	Length       uint16
+	NameChecksum uint16
+}
+
 // GroupLocMap is an interface for tracking the mappings from keys to the
 // locations of their values.
 type GroupLocMap interface {
 	// Get returns timestamp, blockID, offset, length for groupKeyA, groupKeyB,
 	// memberKeyA, memberKeyB, nameChecksum.
 	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameChecksum uint16) (timestamp uint64, blockID uint32, offset uint32, length uint16)
+	// GetGroup returns all matching entries for a group key.
+	GetGroup(groupKeyA uint64, groupKeyB uint64) []*GroupLocMapEntry
 	// Set stores timestamp, blockID, offset, length, nameChecksum for
 	// groupKeyA, groupKeyB, memberKeyA, memberKeyB and returns the previous
 	// timestamp stored. If a newer item is already stored for groupKeyA,
@@ -665,6 +675,11 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	l.RUnlock()
 	n.lock.RUnlock()
 	return 0, 0, 0, 0
+}
+
+func (vlm *groupLocMap) GetGroup(groupKeyA uint64, groupKeyB uint64) []*GroupLocMapEntry {
+	// TODO
+	return nil
 }
 
 func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksum uint16, evenIfSameTimestamp bool) uint64 {
