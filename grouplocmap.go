@@ -43,6 +43,10 @@ import (
 )
 
 type GroupLocMapEntry struct {
+	GroupKeyA    uint64
+	GroupKeyB    uint64
+	MemberKeyA   uint64
+	MemberKeyB   uint64
 	Timestamp    uint64
 	BlockID      uint32
 	Offset       uint32
@@ -678,8 +682,65 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 }
 
 func (vlm *groupLocMap) GetGroup(groupKeyA uint64, groupKeyB uint64) []*GroupLocMapEntry {
-	// TODO
-	return nil
+	var rv []*GroupLocMapEntry
+	n := &vlm.roots[groupKeyA>>vlm.rootShift]
+	n.lock.RLock()
+	for {
+		if n.a == nil {
+			if n.entries == nil {
+				n.lock.RUnlock()
+				return rv
+			}
+			break
+		}
+		l := &n.lock
+		if groupKeyA&n.highMask == 0 {
+			n = n.a
+		} else {
+			n = n.b
+		}
+		n.lock.RLock()
+		l.RUnlock()
+	}
+	b := vlm.bits
+	lm := vlm.lowMask
+	i := lm
+	for {
+		l := &n.entriesLocks[i&vlm.entriesLockMask]
+		ol := &n.overflowLock
+		e := &n.entries[i]
+		l.RLock()
+		if e.blockID != 0 {
+			for {
+				if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB {
+					rv = append(rv, &GroupLocMapEntry{
+						GroupKeyA:    groupKeyA,
+						GroupKeyB:    groupKeyB,
+						MemberKeyA:   e.memberKeyA,
+						MemberKeyB:   e.memberKeyB,
+						Timestamp:    e.timestamp,
+						BlockID:      e.blockID,
+						Offset:       e.offset,
+						Length:       e.length,
+						NameChecksum: e.nameChecksum,
+					})
+				}
+				if e.next == 0 {
+					break
+				}
+				ol.RLock()
+				e = &n.overflow[e.next>>b][e.next&lm]
+				ol.RUnlock()
+			}
+		}
+		l.RUnlock()
+		if i == 0 {
+			break
+		}
+		i--
+	}
+	n.lock.RUnlock()
+	return rv
 }
 
 func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, timestamp uint64, blockID uint32, offset uint32, length uint16, nameChecksum uint16, evenIfSameTimestamp bool) uint64 {
