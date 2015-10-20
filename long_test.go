@@ -57,11 +57,11 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 		}
 	}
 	kt := func(ka uint64, kb uint64, ts uint64, b uint32, o uint32, l uint32) {
-		vlm.Set(ka, kb, 12345, 12345, 789, ts, b, o, l, false)
+		vlm.Set(ka, kb, 789, ts, b, o, l, false)
 		if ts&2 != 0 { // test calls discard with 2 as a mask quite often
 			return
 		}
-		ts2, b2, o2, l2 := vlm.Get(ka, kb, 12345, 12345, 789)
+		ts2, b2, o2, l2 := vlm.Get(ka, kb, 789)
 		if (b != 0 && ts2 != ts) || (b == 0 && ts2 != 0) {
 			panic(fmt.Sprintf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, ts2))
 		}
@@ -97,7 +97,7 @@ func TestExerciseSplitMergeLong(t *testing.T) {
 			}
 			if j%100 == 33 {
 				uselessCounter := 0
-				stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, math.MaxUint64, func(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64, timestamp uint64, length uint32) bool {
+				stopped, more := vlm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, math.MaxUint64, func(groupKeyA uint64, groupKeyB uint64, nameHash uint64, timestamp uint64, length uint32) bool {
 					uselessCounter++
 					return true
 				})

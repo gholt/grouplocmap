@@ -1,10 +1,7 @@
 // Package grouplocmap provides a concurrency-safe data structure that maps
-// groupKey+memberKey+nameHash items to value locations. Each key is 128 bits
-// and is specified using two uint64s (KeyA, KeyB). There are two keys per
-// location, group (groupKeyA, groupKeyB) and member (memberKeyA, memberKeyB).
-// There is also an associated nameHash (uint64) per location. The
-// group+member+name combination represents a group's member by name. A value
-// location is specified using a blockID, offset, length. Each mapping is
+// groupKey+nameHash items to value locations. A groupKey is 128 bits and is
+// specified using two uint64s (KeyA, KeyB); the nameHash is a single uint64. A
+// value location is specified using a blockID, offset, length. Each mapping is
 // assigned a timestamp and the greatest timestamp wins.
 //
 // The timestamp usually has some number of the lowest bits in use for state
@@ -14,9 +11,7 @@
 // Exactly how many bits are used and what they're used for is outside the
 // scope of the mapping itself.
 //
-// The length is the number of total bytes stored at the location. Those bytes
-// must begin with an uint16 nameLength followed by that many bytes of the name
-// value itself.
+// It is expected that the nameHash is unique within a groupKey's set of names.
 //
 // This implementation essentially uses a tree structure of slices of key to
 // location assignments. When a slice fills up, an additional slice is created
@@ -41,36 +36,33 @@ import (
 )
 
 type GroupLocMapEntry struct {
-	GroupKeyA  uint64
-	GroupKeyB  uint64
-	MemberKeyA uint64
-	MemberKeyB uint64
-	NameHash   uint64
-	Timestamp  uint64
-	BlockID    uint32
-	Offset     uint32
-	Length     uint32
+	GroupKeyA uint64
+	GroupKeyB uint64
+	NameHash  uint64
+	Timestamp uint64
+	BlockID   uint32
+	Offset    uint32
+	Length    uint32
 }
 
 // GroupLocMap is an interface for tracking the mappings from keys to the
 // locations of their values.
 type GroupLocMap interface {
 	// Get returns timestamp, blockID, offset, length for groupKeyA, groupKeyB,
-	// memberKeyA, memberKeyB, nameHash.
-	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64) (timestamp uint64, blockID uint32, offset uint32, length uint32)
+	// nameHash.
+	Get(groupKeyA uint64, groupKeyB uint64, nameHash uint64) (timestamp uint64, blockID uint32, offset uint32, length uint32)
 	// GetGroup returns all matching entries for a group key.
 	GetGroup(groupKeyA uint64, groupKeyB uint64) []*GroupLocMapEntry
 	// Set stores timestamp, blockID, offset, length for groupKeyA, groupKeyB,
-	// memberKeyA, memberKeyB, nameHash and returns the previous timestamp
-	// stored. If a newer item is already stored for groupKeyA, groupKeyB,
-	// memberKeyA, memberKeyB, nameHash, that newer item is kept. If an item
-	// with the same timestamp is already stored, it is usually kept unless
-	// evenIfSameTimestamp is set true, in which case the passed in data is
-	// kept (useful to update a location that moved from memory to disk, for
-	// example). Setting an item to blockID == 0 removes it from the mapping if
-	// the timestamp stored is less than (or equal to if evenIfSameTimestamp)
-	// the timestamp passed in.
-	Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64, timestamp uint64, blockID uint32, offset uint32, length uint32, evenIfSameTimestamp bool) (previousTimestamp uint64)
+	// nameHash and returns the previous timestamp stored. If a newer item is
+	// already stored for groupKeyA, groupKeyB, nameHash, that newer item is
+	// kept. If an item with the same timestamp is already stored, it is
+	// usually kept unless evenIfSameTimestamp is set true, in which case the
+	// passed in data is kept (useful to update a location that moved from
+	// memory to disk, for example). Setting an item to blockID == 0 removes it
+	// from the mapping if the timestamp stored is less than (or equal to if
+	// evenIfSameTimestamp) the timestamp passed in.
+	Set(groupKeyA uint64, groupKeyB uint64, nameHash uint64, timestamp uint64, blockID uint32, offset uint32, length uint32, evenIfSameTimestamp bool) (previousTimestamp uint64)
 	// Discard removes any items in the start:stop (inclusive) range whose
 	// timestamp & mask != 0.
 	Discard(start uint64, stop uint64, mask uint64)
@@ -100,7 +92,7 @@ type GroupLocMap interface {
 	// Additionally, the callback itself may abort the scan early by returning
 	// false, in which case the (stopped, more) return values are not
 	// particularly useful.
-	ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64, timestamp uint64, length uint32) bool) (stopped uint64, more bool)
+	ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, nameHash uint64, timestamp uint64, length uint32) bool) (stopped uint64, more bool)
 	// SetInactiveMask defines the mask to use with a timestamp to determine if
 	// a location is inactive (deleted, locally removed, etc.) and is used by
 	// Stats to determine what to count for its ActiveCount and ActiveBytes.
@@ -132,7 +124,7 @@ type Config struct {
 	Roots int
 	// PageSize controls the size in bytes of each chunk of memory allocated.
 	// Defaults to 1,048,576 bytes. The floor for this setting is four times
-	// the Sizeof an internal entry (4 * 64 = 256 bytes).
+	// the Sizeof an internal entry (4 * 48 = 192 bytes).
 	PageSize int
 	// SplitMultiplier indicates how full a memory page can get before being
 	// split into two pages. Defaults to 3.0, which means 3 times as many
@@ -229,16 +221,14 @@ type node struct {
 }
 
 type entry struct { // If the Sizeof this changes, be sure to update docs.
-	groupKeyA  uint64
-	groupKeyB  uint64
-	memberKeyA uint64
-	memberKeyB uint64
-	nameHash   uint64
-	timestamp  uint64
-	blockID    uint32
-	offset     uint32
-	length     uint32
-	next       uint32
+	groupKeyA uint64
+	groupKeyB uint64
+	nameHash  uint64
+	timestamp uint64
+	blockID   uint32
+	offset    uint32
+	length    uint32
+	next      uint32
 }
 
 // New returns a new GroupLocMap instance using the config options given.
@@ -625,7 +615,7 @@ func (vlm *groupLocMap) merge(n *node) {
 	n.resizingLock.Unlock()
 }
 
-func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64) (uint64, uint32, uint32, uint32) {
+func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, nameHash uint64) (uint64, uint32, uint32, uint32) {
 	n := &vlm.roots[groupKeyA>>vlm.rootShift]
 	n.lock.RLock()
 	for {
@@ -658,7 +648,7 @@ func (vlm *groupLocMap) Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 		return 0, 0, 0, 0
 	}
 	for {
-		if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB && e.memberKeyA == memberKeyA && e.memberKeyB == memberKeyB && e.nameHash == nameHash {
+		if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB && e.nameHash == nameHash {
 			rt := e.timestamp
 			rb := e.blockID
 			ro := e.offset
@@ -712,15 +702,13 @@ func (vlm *groupLocMap) GetGroup(groupKeyA uint64, groupKeyB uint64) []*GroupLoc
 			for {
 				if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB {
 					rv = append(rv, &GroupLocMapEntry{
-						GroupKeyA:  groupKeyA,
-						GroupKeyB:  groupKeyB,
-						MemberKeyA: e.memberKeyA,
-						MemberKeyB: e.memberKeyB,
-						Timestamp:  e.timestamp,
-						BlockID:    e.blockID,
-						Offset:     e.offset,
-						Length:     e.length,
-						NameHash:   e.nameHash,
+						GroupKeyA: groupKeyA,
+						GroupKeyB: groupKeyB,
+						NameHash:  e.nameHash,
+						Timestamp: e.timestamp,
+						BlockID:   e.blockID,
+						Offset:    e.offset,
+						Length:    e.length,
 					})
 				}
 				if e.next == 0 {
@@ -741,7 +729,7 @@ func (vlm *groupLocMap) GetGroup(groupKeyA uint64, groupKeyB uint64) []*GroupLoc
 	return rv
 }
 
-func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64, timestamp uint64, blockID uint32, offset uint32, length uint32, evenIfSameTimestamp bool) uint64 {
+func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, nameHash uint64, timestamp uint64, blockID uint32, offset uint32, length uint32, evenIfSameTimestamp bool) uint64 {
 	n := &vlm.roots[groupKeyA>>vlm.rootShift]
 	var pn *node
 	n.lock.RLock()
@@ -780,7 +768,7 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	if e.blockID != 0 {
 		var f uint32
 		for {
-			if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB && e.memberKeyA == memberKeyA && e.memberKeyB == memberKeyB {
+			if e.groupKeyA == groupKeyA && e.groupKeyB == groupKeyB && e.nameHash == nameHash {
 				t := e.timestamp
 				if e.timestamp > timestamp || (e.timestamp == timestamp && !evenIfSameTimestamp) {
 					l.Unlock()
@@ -788,11 +776,11 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 					return t
 				}
 				if blockID != 0 {
+					e.nameHash = nameHash
 					e.timestamp = timestamp
 					e.blockID = blockID
 					e.offset = offset
 					e.length = length
-					e.nameHash = nameHash
 					l.Unlock()
 					n.lock.RUnlock()
 					return t
@@ -850,13 +838,11 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 	if e.blockID == 0 {
 		e.groupKeyA = groupKeyA
 		e.groupKeyB = groupKeyB
-		e.memberKeyA = memberKeyA
-		e.memberKeyB = memberKeyB
+		e.nameHash = nameHash
 		e.timestamp = timestamp
 		e.blockID = blockID
 		e.offset = offset
 		e.length = length
-		e.nameHash = nameHash
 	} else {
 		ol.Lock()
 		o := n.overflow
@@ -899,13 +885,11 @@ func (vlm *groupLocMap) Set(groupKeyA uint64, groupKeyB uint64, memberKeyA uint6
 		}
 		e.groupKeyA = groupKeyA
 		e.groupKeyB = groupKeyB
-		e.memberKeyA = memberKeyA
-		e.memberKeyB = memberKeyB
+		e.nameHash = nameHash
 		e.timestamp = timestamp
 		e.blockID = blockID
 		e.offset = offset
 		e.length = length
-		e.nameHash = nameHash
 		ol.Unlock()
 	}
 	u := atomic.AddUint32(&n.used, 1)
@@ -1012,7 +996,7 @@ func (vlm *groupLocMap) discard(start uint64, stop uint64, mask uint64, n *node)
 	n.lock.RUnlock()
 }
 
-func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64, timestamp uint64, length uint32) bool) (uint64, bool) {
+func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, nameHash uint64, timestamp uint64, length uint32) bool) (uint64, bool) {
 	var stopped uint64
 	var more bool
 	for i := 0; i < len(vlm.roots); i++ {
@@ -1027,7 +1011,7 @@ func (vlm *groupLocMap) ScanCallback(start uint64, stop uint64, mask uint64, not
 }
 
 // Will call n.lock.RUnlock()
-func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64, timestamp uint64, length uint32) bool, n *node) (uint64, uint64, bool) {
+func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, notMask uint64, cutoff uint64, max uint64, callback func(groupKeyA uint64, groupKeyB uint64, nameHash uint64, timestamp uint64, length uint32) bool, n *node) (uint64, uint64, bool) {
 	if start > n.rangeStop || stop < n.rangeStart {
 		n.lock.RUnlock()
 		return max, stop, false
@@ -1074,7 +1058,7 @@ func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, not
 						more = true
 						break
 					}
-					if !callback(e.groupKeyA, e.groupKeyB, e.memberKeyA, e.memberKeyB, e.nameHash, e.timestamp, e.length) {
+					if !callback(e.groupKeyA, e.groupKeyB, e.nameHash, e.timestamp, e.length) {
 						stopped = n.rangeStart
 						more = true
 						break
@@ -1115,7 +1099,7 @@ func (vlm *groupLocMap) scanCallback(start uint64, stop uint64, mask uint64, not
 					more = true
 					break
 				}
-				if !callback(e.groupKeyA, e.groupKeyB, e.memberKeyA, e.memberKeyB, e.nameHash, e.timestamp, e.length) {
+				if !callback(e.groupKeyA, e.groupKeyB, e.nameHash, e.timestamp, e.length) {
 					stopped = n.rangeStart
 					more = true
 					break
