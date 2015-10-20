@@ -28,8 +28,8 @@ func TestSetNewKeyOldTimestampIs0AndNewKeySaved(t *testing.T) {
 	timestamp := uint64(2)
 	blockID := uint32(1)
 	offset := uint32(0)
-	length := uint16(0)
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 789, false)
+	length := uint32(0)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp, blockID, offset, length, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
@@ -55,13 +55,13 @@ func TestSetOverwriteKeyOldTimestampIsOldAndOverwriteWins(t *testing.T) {
 	timestamp1 := uint64(2)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	timestamp2 := timestamp1 + 2
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
@@ -87,13 +87,13 @@ func TestSetOldOverwriteKeyOldTimestampIsPreviousAndPreviousWins(t *testing.T) {
 	timestamp1 := uint64(4)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	timestamp2 := timestamp1 - 2
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
@@ -119,13 +119,13 @@ func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteIgnored(t *testing.T) {
 	timestamp1 := uint64(2)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	timestamp2 := timestamp1
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
@@ -151,13 +151,13 @@ func TestSetOverwriteKeyOldTimestampIsSameAndOverwriteWins(t *testing.T) {
 	timestamp1 := uint64(2)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	timestamp2 := timestamp1
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, true)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, true)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
@@ -183,8 +183,8 @@ func TestSetOverflowingKeys(t *testing.T) {
 	timestamp1 := uint64(2)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	oldTimestamp := glm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	oldTimestamp := glm.Set(keyA1, keyB1, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
@@ -207,7 +207,7 @@ func TestSetOverflowingKeys(t *testing.T) {
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp = glm.Set(keyA2, keyB2, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
+	oldTimestamp = glm.Set(keyA2, keyB2, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
@@ -233,8 +233,8 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	timestamp1 := uint64(2)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	oldTimestamp := glm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	oldTimestamp := glm.Set(keyA1, keyB1, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
@@ -257,7 +257,7 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	blockID2 := blockID1 + 1
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp = glm.Set(keyA2, keyB2, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
+	oldTimestamp = glm.Set(keyA2, keyB2, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
@@ -274,7 +274,7 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	if lengthGet != length2 {
 		t.Fatal(lengthGet, length2)
 	}
-	oldTimestamp = glm.Set(keyA2, keyB2, 12345, 12345, timestamp2, uint32(0), offset2, length2, 789, true)
+	oldTimestamp = glm.Set(keyA2, keyB2, 12345, 12345, 789, timestamp2, uint32(0), offset2, length2, true)
 	if oldTimestamp != timestamp2 {
 		t.Fatal(oldTimestamp)
 	}
@@ -297,7 +297,7 @@ func TestSetOverflowingKeysReuse(t *testing.T) {
 	blockID3 := blockID1 + 2
 	offset3 := offset1 + 2
 	length3 := length1 + 2
-	oldTimestamp = glm.Set(keyA3, keyB3, 12345, 12345, timestamp3, blockID3, offset3, length3, 789, false)
+	oldTimestamp = glm.Set(keyA3, keyB3, 12345, 12345, 789, timestamp3, blockID3, offset3, length3, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
@@ -325,9 +325,9 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	timestamp := uint64(2)
 	blockID := uint32(1)
 	offset := uint32(2)
-	length := uint16(3)
+	length := uint32(3)
 	for keyB := uint64(0); keyB < 100; keyB++ {
-		glm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 789, false)
+		glm.Set(keyA, keyB, 12345, 12345, 789, timestamp, blockID, offset, length, false)
 		blockID++
 		offset++
 		length++
@@ -340,7 +340,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	}
 	blockID = uint32(1)
 	offset = uint32(2)
-	length = uint16(3)
+	length = uint32(3)
 	for keyB := uint64(0); keyB < 100; keyB++ {
 		timestampGet, blockIDGet, offsetGet, lengthGet := glm.Get(keyA, keyB, 12345, 12345, 789)
 		if timestampGet != timestamp {
@@ -362,9 +362,9 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	timestamp2 := timestamp + 2
 	blockID = uint32(2)
 	offset = uint32(3)
-	length = uint16(4)
+	length = uint32(4)
 	for keyB := uint64(0); keyB < 75; keyB++ {
-		timestampSet := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID, offset, length, 789, false)
+		timestampSet := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID, offset, length, false)
 		if timestampSet != timestamp {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampSet, timestamp)
 		}
@@ -374,7 +374,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	}
 	blockID = uint32(2)
 	offset = uint32(3)
-	length = uint16(4)
+	length = uint32(4)
 	for keyB := uint64(0); keyB < 75; keyB++ {
 		timestampGet, blockIDGet, offsetGet, lengthGet := glm.Get(keyA, keyB, 12345, 12345, 789)
 		if timestampGet != timestamp2 {
@@ -398,7 +398,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	}
 	timestamp3 := timestamp2 + 2
 	for keyB := uint64(0); keyB < 50; keyB++ {
-		timestampSet := glm.Set(keyA, keyB, 12345, 12345, timestamp3, uint32(0), uint32(0), uint16(0), 789, false)
+		timestampSet := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp3, uint32(0), uint32(0), uint32(0), false)
 		if timestampSet != timestamp2 {
 			t.Fatalf("%016x %016x %d %d", keyA, keyB, timestampSet, timestamp2)
 		}
@@ -408,7 +408,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	}
 	blockID = uint32(2)
 	offset = uint32(3)
-	length = uint16(4)
+	length = uint32(4)
 	for keyB := uint64(0); keyB < 50; keyB++ {
 		timestampGet, blockIDGet, offsetGet, lengthGet := glm.Get(keyA, keyB, 12345, 12345, 789)
 		if timestampGet != 0 {
@@ -430,9 +430,9 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	timestamp4 := timestamp3 + 2
 	blockID = uint32(7)
 	offset = uint32(8)
-	length = uint16(9)
+	length = uint32(9)
 	for keyB := uint64(200); keyB < 300; keyB++ {
-		glm.Set(keyA, keyB, 12345, 12345, timestamp4, blockID, offset, length, 789, false)
+		glm.Set(keyA, keyB, 12345, 12345, 789, timestamp4, blockID, offset, length, false)
 		blockID++
 		offset++
 		length++
@@ -442,7 +442,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	}
 	blockID = uint32(1)
 	offset = uint32(2)
-	length = uint16(3)
+	length = uint32(3)
 	for keyB := uint64(0); keyB < 100; keyB++ {
 		timestampGet, blockIDGet, offsetGet, lengthGet := glm.Get(keyA, keyB, 12345, 12345, 789)
 		if keyB < 50 {
@@ -491,7 +491,7 @@ func TestSetOverflowingKeysLots(t *testing.T) {
 	}
 	blockID = uint32(7)
 	offset = uint32(8)
-	length = uint16(9)
+	length = uint32(9)
 	for keyB := uint64(200); keyB < 300; keyB++ {
 		timestampGet, blockIDGet, offsetGet, lengthGet := glm.Get(keyA, keyB, 12345, 12345, 789)
 		if timestampGet != timestamp4 {
@@ -519,8 +519,8 @@ func TestSetNewKeyBlockID0OldTimestampIs0AndNoEffect(t *testing.T) {
 	timestamp := uint64(2)
 	blockID := uint32(0)
 	offset := uint32(4)
-	length := uint16(5)
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp, blockID, offset, length, 789, false)
+	length := uint32(5)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp, blockID, offset, length, false)
 	if oldTimestamp != 0 {
 		t.Fatal(oldTimestamp)
 	}
@@ -546,13 +546,13 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsOldAndOverwriteWins(t *testing.T) 
 	timestamp1 := uint64(2)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	timestamp2 := timestamp1 + 2
 	blockID2 := uint32(0)
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
@@ -578,13 +578,13 @@ func TestSetOldOverwriteKeyBlockID0OldTimestampIsPreviousAndPreviousWins(t *test
 	timestamp1 := uint64(4)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	timestamp2 := timestamp1 - 2
 	blockID2 := uint32(0)
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
@@ -610,13 +610,13 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteIgnored(t *testing
 	timestamp1 := uint64(2)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	timestamp2 := timestamp1
 	blockID2 := uint32(0)
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, false)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, false)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
@@ -642,13 +642,13 @@ func TestSetOverwriteKeyBlockID0OldTimestampIsSameAndOverwriteWins(t *testing.T)
 	timestamp1 := uint64(2)
 	blockID1 := uint32(1)
 	offset1 := uint32(0)
-	length1 := uint16(0)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(0)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	timestamp2 := timestamp1
 	blockID2 := uint32(0)
 	offset2 := offset1 + 1
 	length2 := length1 + 1
-	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, timestamp2, blockID2, offset2, length2, 789, true)
+	oldTimestamp := glm.Set(keyA, keyB, 12345, 12345, 789, timestamp2, blockID2, offset2, length2, true)
 	if oldTimestamp != timestamp1 {
 		t.Fatal(oldTimestamp, timestamp1)
 	}
@@ -674,8 +674,8 @@ func TestDiscardMaskNoMatch(t *testing.T) {
 	timestamp1 := uint64(1)
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
-	length1 := uint16(3)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(3)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	glm.Discard(0, math.MaxUint64, 2)
 	timestamp2, blockID2, offset2, length2 := glm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestamp2 != timestamp1 {
@@ -699,8 +699,8 @@ func TestDiscardMaskMatch(t *testing.T) {
 	timestamp1 := uint64(1)
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
-	length1 := uint16(3)
-	glm.Set(keyA, keyB, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(3)
+	glm.Set(keyA, keyB, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	glm.Discard(0, math.MaxUint64, 1)
 	timestamp2, blockID2, offset2, length2 := glm.Get(keyA, keyB, 12345, 12345, 789)
 	if timestamp2 != 0 {
@@ -724,10 +724,10 @@ func TestScanCallbackBasic(t *testing.T) {
 	timestamp1 := uint64(1)
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
-	length1 := uint16(3)
-	glm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(3)
+	glm.Set(keyA1, keyB1, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	good := false
-	stopped, more := glm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB3 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more := glm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB3 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		if groupKeyA2 == keyA1 && groupKeyB2 == keyB1 {
 			if timestamp2 != timestamp1 {
 				t.Fatal(timestamp2)
@@ -759,10 +759,10 @@ func TestScanCallbackRangeMiss(t *testing.T) {
 	timestamp1 := uint64(1)
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
-	length1 := uint16(3)
-	glm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(3)
+	glm.Set(keyA1, keyB1, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	good := false
-	stopped, more := glm.ScanCallback(101, math.MaxUint64, 0, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more := glm.ScanCallback(101, math.MaxUint64, 0, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		t.Fatalf("%x %x %d %d\n", groupKeyA2, groupKeyB2, timestamp2, length2)
 		return false
 	})
@@ -776,7 +776,7 @@ func TestScanCallbackRangeMiss(t *testing.T) {
 		t.Fatal("should not have been more")
 	}
 	good = false
-	stopped, more = glm.ScanCallback(0, 99, 0, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more = glm.ScanCallback(0, 99, 0, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		t.Fatalf("%x %x %d %d\n", groupKeyA2, groupKeyB2, timestamp2, length2)
 		return false
 	})
@@ -798,10 +798,10 @@ func TestScanCallbackMask(t *testing.T) {
 	timestamp1 := uint64(1)
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
-	length1 := uint16(3)
-	glm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(3)
+	glm.Set(keyA1, keyB1, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	good := false
-	stopped, more := glm.ScanCallback(0, math.MaxUint64, 1, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more := glm.ScanCallback(0, math.MaxUint64, 1, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		if groupKeyA2 == keyA1 && groupKeyB2 == keyB1 {
 			if timestamp2 != timestamp1 {
 				t.Fatal(timestamp2)
@@ -825,7 +825,7 @@ func TestScanCallbackMask(t *testing.T) {
 		t.Fatal("should not have been more")
 	}
 	good = false
-	stopped, more = glm.ScanCallback(0, math.MaxUint64, 2, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more = glm.ScanCallback(0, math.MaxUint64, 2, 0, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		t.Fatalf("%x %x %d %d\n", groupKeyA2, groupKeyB2, timestamp2, length2)
 		return false
 	})
@@ -847,10 +847,10 @@ func TestScanCallbackNotMask(t *testing.T) {
 	timestamp1 := uint64(1)
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
-	length1 := uint16(3)
-	glm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(3)
+	glm.Set(keyA1, keyB1, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	good := false
-	stopped, more := glm.ScanCallback(0, math.MaxUint64, 0, 2, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more := glm.ScanCallback(0, math.MaxUint64, 0, 2, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		if groupKeyA2 == keyA1 && groupKeyB2 == keyB1 {
 			if timestamp2 != timestamp1 {
 				t.Fatal(timestamp2)
@@ -874,7 +874,7 @@ func TestScanCallbackNotMask(t *testing.T) {
 		t.Fatal("should not have been more")
 	}
 	good = false
-	stopped, more = glm.ScanCallback(0, math.MaxUint64, 0, 1, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more = glm.ScanCallback(0, math.MaxUint64, 0, 1, math.MaxUint64, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		t.Fatalf("%x %x %d %d\n", groupKeyA2, groupKeyB2, timestamp2, length2)
 		return false
 	})
@@ -896,10 +896,10 @@ func TestScanCallbackCutoff(t *testing.T) {
 	timestamp1 := uint64(123)
 	blockID1 := uint32(1)
 	offset1 := uint32(2)
-	length1 := uint16(3)
-	glm.Set(keyA1, keyB1, 12345, 12345, timestamp1, blockID1, offset1, length1, 789, false)
+	length1 := uint32(3)
+	glm.Set(keyA1, keyB1, 12345, 12345, 789, timestamp1, blockID1, offset1, length1, false)
 	good := false
-	stopped, more := glm.ScanCallback(0, math.MaxUint64, 0, 0, 123, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more := glm.ScanCallback(0, math.MaxUint64, 0, 0, 123, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		if groupKeyA2 == keyA1 && groupKeyB2 == keyB1 {
 			if timestamp2 != timestamp1 {
 				t.Fatal(timestamp2)
@@ -923,7 +923,7 @@ func TestScanCallbackCutoff(t *testing.T) {
 		t.Fatal("should not have been more")
 	}
 	good = false
-	stopped, more = glm.ScanCallback(0, math.MaxUint64, 0, 0, 122, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more = glm.ScanCallback(0, math.MaxUint64, 0, 0, 122, 100, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		t.Fatalf("%x %x %d %d\n", groupKeyA2, groupKeyB2, timestamp2, length2)
 		return false
 	})
@@ -943,10 +943,10 @@ func TestScanCallbackMax(t *testing.T) {
 	keyA := uint64(0)
 	for i := 0; i < 4000; i++ {
 		keyA += 0x0010000000000000
-		glm.Set(keyA, 0, 12345, 12345, 1, 2, 3, 4, 789, false)
+		glm.Set(keyA, 0, 12345, 12345, 789, 1, 2, 3, 4, false)
 	}
 	count := 0
-	stopped, more := glm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, 50, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more := glm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, 50, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		count++
 		return true
 	})
@@ -960,7 +960,7 @@ func TestScanCallbackMax(t *testing.T) {
 		t.Fatal("should have been more")
 	}
 	count = 0
-	stopped, more = glm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, 5000, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, timestamp2 uint64, length2 uint16, nameChecksum2 uint16) bool {
+	stopped, more = glm.ScanCallback(0, math.MaxUint64, 0, 0, math.MaxUint64, 5000, func(groupKeyA2 uint64, groupKeyB2 uint64, memberKeyA2 uint64, memberKeyB2 uint64, nameHash2 uint64, timestamp2 uint64, length2 uint32) bool {
 		count++
 		return true
 	})
@@ -1001,7 +1001,7 @@ func TestStatsBasic(t *testing.T) {
 			ts = 2
 			maskedCount++
 		}
-		glm.Set(ka, kb, 12345, 12345, ts, 2, 3, 4, 789, false)
+		glm.Set(ka, kb, 12345, 12345, 789, ts, 2, 3, 4, false)
 	}
 	glm.SetInactiveMask(0)
 	stats := glm.Stats(false)
@@ -1058,7 +1058,7 @@ func TestExerciseSplitMergeDiscard(t *testing.T) {
 	// Roots is set low to get deeper quicker.
 	// PageSize is set low to cause more page creation and deletion.
 	// SplitMultiplier is set low to get splits to happen quicker.
-	glm := New(&Config{Workers: 1, Roots: 1, PageSize: 512, SplitMultiplier: 1}).(*groupLocMap)
+	glm := New(&Config{Workers: 1, Roots: 1, PageSize: 768, SplitMultiplier: 1}).(*groupLocMap)
 	// Override the mergeLevel to make it happen more often.
 	for i := 0; i < len(glm.roots); i++ {
 		glm.roots[i].mergeLevel = glm.roots[i].splitLevel - 2
@@ -1073,8 +1073,8 @@ func TestExerciseSplitMergeDiscard(t *testing.T) {
 	for j := uint32(0); j < uint32(count); j++ {
 		binary.BigEndian.PutUint32(keyspace[j*16+4:], j)
 	}
-	kt := func(ka uint64, kb uint64, ts uint64, b uint32, o uint32, l uint16) {
-		glm.Set(ka, kb, 12345, 12345, ts, b, o, l, 789, false)
+	kt := func(ka uint64, kb uint64, ts uint64, b uint32, o uint32, l uint32) {
+		glm.Set(ka, kb, 12345, 12345, 789, ts, b, o, l, false)
 		ts2, b2, o2, l2 := glm.Get(ka, kb, 12345, 12345, 789)
 		if (b != 0 && ts2 != ts) || (b == 0 && ts2 != 0) {
 			t.Fatalf("%x %x %d %d %d %d ! %d", ka, kb, ts, b, o, l, ts2)
@@ -1113,8 +1113,8 @@ func TestExerciseSplitMergeDiscard(t *testing.T) {
 func TestGetGroup(t *testing.T) {
 	glm := New(nil)
 	for i := uint64(0); i < 1000; i++ {
-		glm.Set(54320, 54321, i, i, 1, 2, 3, 4, uint16(i), false)
-		glm.Set(54321, 54321, i, i, 1, 2, 3, 4, uint16(i), false)
+		glm.Set(54320, 54321, i, i, i, 1, 2, 3, 4, false)
+		glm.Set(54321, 54321, i, i, i, 1, 2, 3, 4, false)
 	}
 	locs := glm.GetGroup(54321, 54321)
 	if len(locs) != 1000 {
@@ -1142,8 +1142,8 @@ func TestGetGroup(t *testing.T) {
 		if e.Length != 4 {
 			t.Fatal(e.Length)
 		}
-		if e.NameChecksum != uint16(e.MemberKeyA) {
-			t.Fatal(e.NameChecksum)
+		if e.NameHash != e.MemberKeyA {
+			t.Fatal(e.NameHash)
 		}
 	}
 }
