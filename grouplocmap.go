@@ -60,10 +60,10 @@ type GroupLocMap interface {
 	Get(groupKeyA uint64, groupKeyB uint64, memberKeyA uint64, memberKeyB uint64, nameHash uint64) (timestamp uint64, blockID uint32, offset uint32, length uint32)
 	// GetGroup returns all matching entries for a group key.
 	GetGroup(groupKeyA uint64, groupKeyB uint64) []*GroupLocMapEntry
-	// Set stores timestamp, blockID, offset, length for
-	// groupKeyA, groupKeyB, memberKeyA, memberKeyB, nameHash and returns the previous
-	// timestamp stored. If a newer item is already stored for groupKeyA,
-	// groupKeyB, memberKeyA, memberKeyB, nameHash, that newer item is kept. If an item
+	// Set stores timestamp, blockID, offset, length for groupKeyA, groupKeyB,
+	// memberKeyA, memberKeyB, nameHash and returns the previous timestamp
+	// stored. If a newer item is already stored for groupKeyA, groupKeyB,
+	// memberKeyA, memberKeyB, nameHash, that newer item is kept. If an item
 	// with the same timestamp is already stored, it is usually kept unless
 	// evenIfSameTimestamp is set true, in which case the passed in data is
 	// kept (useful to update a location that moved from memory to disk, for
